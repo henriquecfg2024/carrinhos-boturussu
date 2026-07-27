@@ -43,6 +43,26 @@
   --radius-full:9999px;
   --transition:0.25s cubic-bezier(.4,0,.2,1);
 }
+/* ===== THEMES ===== */
+.app[data-theme="amber"]{
+  --navy:#b45309;
+  --blue:#d97706;
+  --blue-light:#f59e0b;
+  --blue-pale:#fef3c7;
+  --yellow:#b45309;
+}
+.app[data-theme="emerald"]{
+  --navy:#14532d;
+  --blue:#16a34a;
+  --blue-light:#22c55e;
+  --blue-pale:#dcfce7;
+}
+.app[data-theme="purple"]{
+  --navy:#4c1d95;
+  --blue:#7c3aed;
+  --blue-light:#8b5cf6;
+  --blue-pale:#f3e8ff;
+}
 html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
 body{
   font-family:'Inter',sans-serif;
@@ -668,6 +688,157 @@ small{font-size:.8rem}
         </div>
       </div>
     </div>
+    <!-- Report Tab -->
+    <div id="tab-report" style="padding:16px;padding-bottom:88px;display:none">
+      <div class="tabs" id="report-subnav" style="margin:-16px -16px 16px -16px;padding:0 8px;background:var(--white)">
+        <button class="tab active" onclick="switchReportTab('day',this)">Dia</button>
+        <button class="tab" onclick="switchReportTab('month',this)">Mês</button>
+        <button class="tab" onclick="switchReportTab('year',this)">Ano</button>
+        <button class="tab" onclick="switchReportTab('config',this)">⚙️ Ajustes</button>
+      </div>
+
+      <!-- SUB-TAB: DIA -->
+      <div id="rep-subtab-day">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--blue);color:#fff;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px">
+          <button class="btn-icon" onclick="changeReportDay(-1)">‹</button>
+          <div style="font-weight:700;font-size:.95rem" id="rep-day-title">--</div>
+          <button class="btn-icon" onclick="changeReportDay(1)">›</button>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span style="font-size:1.2rem">📝</span><h3>Relatório para este dia:</h3></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600">Horas</span>
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="btn btn-warning btn-icon" style="width:36px;height:36px;border-radius:50%;font-size:1.2rem" onclick="modRepVal('hours',-1)">-</button>
+                <span id="rep-val-hours" style="font-size:1.3rem;font-weight:800;width:30px;text-align:center">0</span>
+                <button class="btn btn-warning btn-icon" style="width:36px;height:36px;border-radius:50%;font-size:1.2rem" onclick="modRepVal('hours',1)">+</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600">Minutos</span>
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="btn btn-warning btn-icon" style="width:36px;height:36px;border-radius:50%;font-size:1.2rem" onclick="modRepVal('minutes',-5)">-</button>
+                <span id="rep-val-minutes" style="font-size:1.3rem;font-weight:800;width:30px;text-align:center">0</span>
+                <button class="btn btn-warning btn-icon" style="width:36px;height:36px;border-radius:50%;font-size:1.2rem" onclick="modRepVal('minutes',5)">+</button>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600">Estudos bíblicos</span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span id="rep-val-studies" style="font-size:1.1rem;font-weight:700">0</span>
+                <button class="btn btn-ghost btn-xs" onclick="editRepField('studies')">Editar</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600">Horas de crédito</span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span id="rep-val-credits" style="font-size:1.1rem;font-weight:700">0 h</span>
+                <button class="btn btn-ghost btn-xs" onclick="editRepField('credits')">Editar</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600">Notas</span>
+              <button class="btn btn-ghost btn-xs" onclick="editRepField('notes')">Adicionar / Editar</button>
+            </div>
+            <div id="rep-notes-preview" style="font-size:.82rem;color:var(--gray-600);background:var(--gray-50);padding:8px 12px;border-radius:var(--radius-sm);display:none"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;text-align:center">
+          <div class="card-header" style="justify-content:center"><h3>⏱️ Cronômetro</h3></div>
+          <div class="card-body" style="padding:24px 16px">
+            <div style="width:150px;height:150px;border-radius:50%;border:6px solid var(--blue-pale);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)">
+              <div style="font-size:1.8rem;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums" id="timer-display">00:00:00</div>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center">
+              <button class="btn btn-warning" id="btn-timer-toggle" style="width:54px;height:54px;border-radius:50%;font-size:1.4rem" onclick="toggleTimer()">▶</button>
+              <button class="btn btn-ghost" id="btn-timer-reset" style="width:54px;height:54px;border-radius:50%;font-size:1.2rem" onclick="resetTimer()">⏹</button>
+            </div>
+            <button class="btn btn-outline btn-full btn-sm" style="margin-top:16px" onclick="applyTimerToDay()">➕ Lançar tempo no dia</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: MÊS -->
+      <div id="rep-subtab-month" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--blue);color:#fff;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px">
+          <button class="btn-icon" onclick="changeReportMonth(-1)">‹</button>
+          <div style="font-weight:700;font-size:.95rem" id="rep-month-title">--</div>
+          <button class="btn-icon" onclick="changeReportMonth(1)">›</button>
+        </div>
+
+        <button class="btn btn-warning btn-full" style="margin-bottom:16px;font-size:1rem;padding:14px" onclick="sendReportWhatsApp()">📲 Enviar Relatório no WhatsApp</button>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body">
+            <h3 style="color:var(--navy);margin-bottom:12px">Relatório para este mês:</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:1.1rem;font-weight:600">Horas: <b id="rep-month-hours" style="font-size:1.4rem;color:var(--blue)">0</b></span>
+              <span style="font-size:1.1rem;font-weight:600">Minutos: <b id="rep-month-mins" style="font-size:1.4rem;color:var(--blue)">0</b></span>
+            </div>
+            <div style="margin-bottom:12px;font-size:.95rem">Estudos bíblicos: <b id="rep-month-studies">0</b></div>
+            <p style="font-size:.78rem;color:var(--gray-400);font-style:italic">(Os minutos são adicionados automaticamente ao próximo mês.)</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>📅 Horas Registradas no Mês</h3></div>
+          <div class="card-body" style="padding:10px">
+            <div class="cal-grid" id="rep-month-grid-header"></div>
+            <div class="cal-grid" id="rep-month-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: ANO -->
+      <div id="rep-subtab-year" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--blue);color:#fff;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px">
+          <button class="btn-icon" onclick="changeReportYear(-1)">‹</button>
+          <div style="font-weight:700;font-size:.95rem" id="rep-year-title">2025 - 2026</div>
+          <button class="btn-icon" onclick="changeReportYear(1)">›</button>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body">
+            <h3 style="color:var(--navy);margin-bottom:8px">Relatório para este ano:</h3>
+            <div style="font-size:1.2rem;font-weight:700">Horas: <span id="rep-year-hours" style="color:var(--blue)">0</span> &nbsp; Minutos: <span id="rep-year-mins" style="color:var(--blue)">0</span></div>
+            <div style="font-size:.95rem;margin-top:6px">Estudos bíblicos: <b id="rep-year-studies">0</b></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <table class="data-table" style="width:100%">
+              <thead>
+                <tr><th>Mês</th><th>Relatório</th><th>Objetivo</th><th>Excedente / Ausente</th></tr>
+              </thead>
+              <tbody id="rep-year-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: CONFIGURAÇÕES DO RELATÓRIO -->
+      <div id="rep-subtab-config" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>🎨 Customização do Visual</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Tema de Cores do Aplicativo</label>
+              <select class="form-control" id="rep-cfg-theme" onchange="setAppTheme(this.value)">
+                <option value="navy">🔵 Azul Marinho (Clássico)</option>
+                <option value="amber">🟡 Amber (Âmbar / Dourado)</option>
+                <option value="emerald">🟢 Esmeralda (Verde)</option>
+                <option value="purple">🟣 Roxo (Índigo)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <!-- BOTTOM NAV PUB -->
   <nav class="bottomnav" id="pub-nav">
@@ -681,6 +852,9 @@ small{font-size:.8rem}
     <button class="nav-item" data-tab="waiting" onclick="switchPubTab('waiting',this)">
       <span class="nav-icon">⏳</span>Espera
       <span class="nav-badge" id="mywaiting-count" style="display:none"></span>
+    </button>
+    <button class="nav-item" data-tab="report" onclick="switchPubTab('report',this)">
+      <span class="nav-icon">⏱️</span>Relatório
     </button>
     <button class="nav-item" data-tab="profile" onclick="switchPubTab('profile',this)">
       <span class="nav-icon">👤</span>Perfil
@@ -1122,13 +1296,14 @@ function fetchWeather(){
 function switchPubTab(tab, el){
   pubTab=tab;
   document.querySelectorAll('#pub-nav .nav-item').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  ['home','myschedule','waiting','profile'].forEach(t=>{
+  if (el) el.classList.add('active');
+  ['home','myschedule','waiting','profile','report'].forEach(t=>{
     const el2=document.getElementById(`tab-${t}`);
     if(el2) el2.style.display=t===tab?'block':'none';
   });
   if(tab==='myschedule') renderMySchedule();
   if(tab==='waiting') renderMyWaiting();
+  if(tab==='report') initReportScreen();
   if(tab==='profile'){ document.getElementById('chg-old-pass').value='';document.getElementById('chg-new-pass').value='';document.getElementById('chg-new-pass2').value=''; }
 }
 
@@ -1344,7 +1519,7 @@ async function cancelBooking(bookingId){
   updateBadges();
 }
 
-function doCheckin(bookingId){
+async function doCheckin(bookingId){
   const bookings=load('bookings')||[];
   const idx=bookings.findIndex(b=>b.id===bookingId);
   if(idx<0) return;
@@ -1356,6 +1531,20 @@ function doCheckin(bookingId){
   toast('Check-in realizado! Bom serviço! 🙏','success');
   renderCarts();
   renderMySchedule();
+
+  const res = await modal({
+    title: '▶ Iniciar Cronômetro?',
+    desc: 'Check-in realizado! Deseja iniciar o cronômetro do seu relatório de pregação agora?',
+    actions: [
+      { label: '▶ Iniciar Cronômetro', cls: 'btn-success', value: 'start' },
+      { label: 'Agora não', cls: 'btn-ghost', value: 'skip' }
+    ]
+  });
+  if (res === 'start') {
+    const btn = document.querySelector('[data-tab="report"]');
+    switchPubTab('report', btn);
+    if (!timerRunning) toggleTimer();
+  }
 }
 
 function doCheckout(bookingId){
@@ -1370,6 +1559,11 @@ function doCheckout(bookingId){
   toast('Check-out realizado! Obrigado pelo serviço! 🎉','success');
   renderCarts();
   renderMySchedule();
+
+  if (timerRunning) {
+    toggleTimer(); // pause timer
+    toast('Cronômetro pausado ao fazer check-out. Clique em "Relatório" para salvar no dia!', 'info', 5000);
+  }
 }
 
 // --- WAITING LIST ---
@@ -2205,6 +2399,397 @@ document.getElementById('btn-change-pass').onclick=()=>{
   document.getElementById('chg-new-pass').value='';
   document.getElementById('chg-new-pass2').value='';
 };
+
+// ============================================================
+// MEU RELATÓRIO & CRONÔMETRO
+// ============================================================
+let reportSubTab = 'day';
+let selectedReportDate = todayStr();
+let selectedReportMonth = new Date().toISOString().slice(0, 7);
+let selectedReportYear = new Date().getFullYear();
+
+let timerRunning = false;
+let timerStartTime = 0;
+let timerAccumulated = 0;
+let timerInterval = null;
+
+function getReportKey() {
+  return currentUser ? 'report_' + currentUser.id : 'report_guest';
+}
+
+function getReportConfigKey() {
+  return currentUser ? 'report_cfg_' + currentUser.id : 'report_cfg_guest';
+}
+
+function loadAllUserReports() {
+  return load(getReportKey()) || {};
+}
+
+function saveAllUserReports(rep) {
+  save(getReportKey(), rep);
+}
+
+function loadReportConfig() {
+  return load(getReportConfigKey()) || { theme: 'navy', goal: 0, carry: true };
+}
+
+function saveReportConfig(cfg) {
+  if (!cfg) cfg = loadReportConfig();
+  save(getReportConfigKey(), cfg);
+}
+
+function setAppTheme(theme) {
+  const app = document.querySelector('.app');
+  if (app) {
+    if (theme === 'navy') app.removeAttribute('data-theme');
+    else app.setAttribute('data-theme', theme);
+  }
+  const cfg = loadReportConfig();
+  cfg.theme = theme;
+  saveReportConfig(cfg);
+}
+
+function initReportScreen() {
+  const cfg = loadReportConfig();
+  if (cfg.theme) setAppTheme(cfg.theme);
+  const selTheme = document.getElementById('rep-cfg-theme');
+  if (selTheme) selTheme.value = cfg.theme || 'navy';
+  const selGoal = document.getElementById('rep-cfg-goal');
+  if (selGoal) selGoal.value = cfg.goal || 0;
+  
+  renderReportDay();
+  renderReportMonth();
+  renderReportYear();
+}
+
+function switchReportTab(subTab, el) {
+  reportSubTab = subTab;
+  document.querySelectorAll('#report-subnav .tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  ['day', 'month', 'year', 'config'].forEach(st => {
+    const div = document.getElementById(`rep-subtab-${st}`);
+    if (div) div.style.display = st === subTab ? 'block' : 'none';
+  });
+  if (subTab === 'day') renderReportDay();
+  if (subTab === 'month') renderReportMonth();
+  if (subTab === 'year') renderReportYear();
+}
+
+function changeReportDay(delta) {
+  selectedReportDate = addDays(selectedReportDate, delta);
+  renderReportDay();
+}
+
+function renderReportDay() {
+  const [y, m, d] = selectedReportDate.split('-');
+  const dt = new Date(selectedReportDate + 'T12:00:00');
+  const dayName = DAY_NAMES[dt.getDay()];
+  const monthName = MONTH_NAMES[dt.getMonth()].toLowerCase();
+  const label = `${dayName}, ${parseInt(d)} de ${monthName} de ${y}`;
+  const titleEl = document.getElementById('rep-day-title');
+  if (titleEl) titleEl.textContent = label;
+
+  const all = loadAllUserReports();
+  const entry = all[selectedReportDate] || { hours: 0, minutes: 0, studies: 0, credits: 0, notes: '' };
+
+  document.getElementById('rep-val-hours').textContent = entry.hours || 0;
+  document.getElementById('rep-val-minutes').textContent = entry.minutes || 0;
+  document.getElementById('rep-val-studies').textContent = entry.studies || 0;
+  document.getElementById('rep-val-credits').textContent = (entry.credits || 0) + ' h';
+
+  const notesEl = document.getElementById('rep-notes-preview');
+  if (notesEl) {
+    if (entry.notes) {
+      notesEl.textContent = '📌 ' + entry.notes;
+      notesEl.style.display = 'block';
+    } else {
+      notesEl.style.display = 'none';
+    }
+  }
+}
+
+function modRepVal(field, val) {
+  const all = loadAllUserReports();
+  if (!all[selectedReportDate]) {
+    all[selectedReportDate] = { hours: 0, minutes: 0, studies: 0, credits: 0, notes: '' };
+  }
+  const entry = all[selectedReportDate];
+  if (field === 'hours') {
+    entry.hours = Math.max(0, (entry.hours || 0) + val);
+  } else if (field === 'minutes') {
+    let totalMins = (entry.hours || 0) * 60 + (entry.minutes || 0) + val;
+    totalMins = Math.max(0, totalMins);
+    entry.hours = Math.floor(totalMins / 60);
+    entry.minutes = totalMins % 60;
+  }
+  all[selectedReportDate] = entry;
+  saveAllUserReports(all);
+  renderReportDay();
+}
+
+async function editRepField(field) {
+  const all = loadAllUserReports();
+  if (!all[selectedReportDate]) {
+    all[selectedReportDate] = { hours: 0, minutes: 0, studies: 0, credits: 0, notes: '' };
+  }
+  const entry = all[selectedReportDate];
+
+  if (field === 'studies') {
+    const res = await modal({
+      title: 'Estudos Bíblicos',
+      desc: 'Quantidade de estudos bíblicos dirigidos hoje:',
+      html: `<input class="form-control" type="number" id="mod-studies-val" value="${entry.studies || 0}" min="0"/>`,
+      actions: [{ label: 'Salvar', cls: 'btn-primary', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }]
+    });
+    if (res === 'ok') {
+      const v = parseInt(document.getElementById('mod-studies-val').value) || 0;
+      entry.studies = Math.max(0, v);
+      saveAllUserReports(all);
+      renderReportDay();
+    }
+  } else if (field === 'credits') {
+    const res = await modal({
+      title: 'Horas de Crédito',
+      desc: 'Horas de crédito (LDC, Bethel, construção):',
+      html: `<input class="form-control" type="number" id="mod-credits-val" value="${entry.credits || 0}" min="0"/>`,
+      actions: [{ label: 'Salvar', cls: 'btn-primary', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }]
+    });
+    if (res === 'ok') {
+      const v = parseInt(document.getElementById('mod-credits-val').value) || 0;
+      entry.credits = Math.max(0, v);
+      saveAllUserReports(all);
+      renderReportDay();
+    }
+  } else if (field === 'notes') {
+    const res = await modal({
+      title: 'Notas do Dia',
+      desc: 'Observações e anotações do dia:',
+      html: `<textarea class="form-control" id="mod-notes-val" rows="3" placeholder="Escreva aqui...">${entry.notes || ''}</textarea>`,
+      actions: [{ label: 'Salvar', cls: 'btn-primary', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }]
+    });
+    if (res === 'ok') {
+      entry.notes = (document.getElementById('mod-notes-val').value || '').trim();
+      saveAllUserReports(all);
+      renderReportDay();
+    }
+  }
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    timerAccumulated += Date.now() - timerStartTime;
+    timerRunning = false;
+    clearInterval(timerInterval);
+    const btn = document.getElementById('btn-timer-toggle');
+    if (btn) btn.textContent = '▶';
+  } else {
+    timerStartTime = Date.now();
+    timerRunning = true;
+    timerInterval = setInterval(updateTimerDisplay, 500);
+    const btn = document.getElementById('btn-timer-toggle');
+    if (btn) btn.textContent = '⏸';
+  }
+}
+
+function resetTimer() {
+  timerRunning = false;
+  clearInterval(timerInterval);
+  timerStartTime = 0;
+  timerAccumulated = 0;
+  updateTimerDisplay();
+  const btn = document.getElementById('btn-timer-toggle');
+  if (btn) btn.textContent = '▶';
+}
+
+function updateTimerDisplay() {
+  let totalMs = timerAccumulated;
+  if (timerRunning) totalMs += Date.now() - timerStartTime;
+  const totalSec = Math.floor(totalMs / 1000);
+  const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+  const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+  const s = String(totalSec % 60).padStart(2, '0');
+  const el = document.getElementById('timer-display');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}
+
+function applyTimerToDay() {
+  let totalMs = timerAccumulated;
+  if (timerRunning) totalMs += Date.now() - timerStartTime;
+  const mins = Math.floor(totalMs / 60000);
+  if (mins <= 0) {
+    toast('O cronômetro ainda não acumulou minutos.', 'warning');
+    return;
+  }
+  modRepVal('minutes', mins);
+  toast(`${mins} minuto(s) adicionados ao dia de hoje!`, 'success');
+  resetTimer();
+}
+
+function changeReportMonth(delta) {
+  const [y, m] = selectedReportMonth.split('-').map(Number);
+  const dt = new Date(y, m - 1 + delta, 1);
+  const ny = dt.getFullYear();
+  const nm = String(dt.getMonth() + 1).padStart(2, '0');
+  selectedReportMonth = `${ny}-${nm}`;
+  renderReportMonth();
+}
+
+function renderReportMonth() {
+  const [y, m] = selectedReportMonth.split('-').map(Number);
+  const monthName = MONTH_NAMES[m - 1];
+  const mTitle = document.getElementById('rep-month-title');
+  if (mTitle) mTitle.textContent = `${monthName} de ${y}`;
+
+  const all = loadAllUserReports();
+  let totalH = 0, totalM = 0, totalStudies = 0;
+
+  Object.keys(all).forEach(ds => {
+    if (ds.startsWith(selectedReportMonth)) {
+      const e = all[ds];
+      totalH += e.hours || 0;
+      totalM += e.minutes || 0;
+      totalStudies += e.studies || 0;
+    }
+  });
+
+  totalH += Math.floor(totalM / 60);
+  totalM = totalM % 60;
+
+  const elH = document.getElementById('rep-month-hours');
+  if (elH) elH.textContent = totalH;
+  const elM = document.getElementById('rep-month-mins');
+  if (elM) elM.textContent = totalM;
+  const elSt = document.getElementById('rep-month-studies');
+  if (elSt) elSt.textContent = totalStudies;
+
+  const firstDay = new Date(y, m - 1, 1).getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const prevMonthDays = new Date(y, m - 1, 0).getDate();
+
+  const hg = document.getElementById('rep-month-grid-header');
+  if (hg) hg.innerHTML = DAY_NAMES.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+
+  let html = '';
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day other-month">${prevMonthDays - firstDay + 1 + i}</div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const e = all[ds];
+    let sub = '';
+    if (e && (e.hours > 0 || e.minutes > 0)) {
+      const hStr = e.hours ? `${e.hours}h` : '';
+      const mStr = e.minutes ? `${e.minutes}m` : '';
+      sub = `<div style="font-size:.6rem;color:var(--blue);font-weight:700;margin-top:2px">${hStr}${mStr}</div>`;
+    }
+    html += `<div class="cal-day" onclick="selectReportDateFromCal('${ds}')"><span style="font-size:.85rem">${d}</span>${sub}</div>`;
+  }
+  const grid = document.getElementById('rep-month-grid');
+  if (grid) grid.innerHTML = html;
+}
+
+function selectReportDateFromCal(ds) {
+  selectedReportDate = ds;
+  switchReportTab('day', document.querySelector('#report-subnav .tab'));
+  renderReportDay();
+}
+
+function sendReportWhatsApp() {
+  const [y, m] = selectedReportMonth.split('-').map(Number);
+  const monthName = MONTH_NAMES[m - 1];
+  const all = loadAllUserReports();
+  let totalH = 0, totalM = 0, totalStudies = 0;
+
+  Object.keys(all).forEach(ds => {
+    if (ds.startsWith(selectedReportMonth)) {
+      const e = all[ds];
+      totalH += e.hours || 0;
+      totalM += e.minutes || 0;
+      totalStudies += e.studies || 0;
+    }
+  });
+
+  totalH += Math.floor(totalM / 60);
+  totalM = totalM % 60;
+
+  const pubName = currentUser ? currentUser.nome : 'Publicador';
+  const txt = `📋 *RELATÓRIO DO SERVIÇO DE CAMPO*\n👤 *Publicador:* ${pubName}\n📅 *Mês:* ${monthName} de ${y}\n\n⏱️ *Horas:* ${totalH}h ${totalM}m\n📖 *Estudos Bíblicos:* ${totalStudies}\n\n_Enviado via Agenda do Carrinho Boturussu_`;
+
+  if (navigator.share) {
+    navigator.share({ text: txt });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt);
+    toast('Relatório copiado! Abra o WhatsApp e cole para o secretário.', 'success', 4000);
+  } else {
+    const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    toast('Relatório copiado!', 'success');
+  }
+}
+
+function changeReportYear(delta) {
+  selectedReportYear += delta;
+  renderReportYear();
+}
+
+function renderReportYear() {
+  const y = selectedReportYear;
+  const yTitle = document.getElementById('rep-year-title');
+  if (yTitle) yTitle.textContent = `${y - 1} - ${y}`;
+
+  const all = loadAllUserReports();
+  let grandH = 0, grandM = 0, grandStudies = 0;
+
+  const monthsList = [
+    { name: `Setembro ${y-1}`, key: `${y-1}-09` },
+    { name: `Outubro ${y-1}`, key: `${y-1}-10` },
+    { name: `Novembro ${y-1}`, key: `${y-1}-11` },
+    { name: `Dezembro ${y-1}`, key: `${y-1}-12` },
+    { name: `Janeiro ${y}`, key: `${y}-01` },
+    { name: `Fevereiro ${y}`, key: `${y}-02` },
+    { name: `Março ${y}`, key: `${y}-03` },
+    { name: `Abril ${y}`, key: `${y}-04` },
+    { name: `Maio ${y}`, key: `${y}-05` },
+    { name: `Junho ${y}`, key: `${y}-06` },
+    { name: `Julho ${y}`, key: `${y}-07` },
+    { name: `Agosto ${y}`, key: `${y}-08` }
+  ];
+
+  const tbody = document.getElementById('rep-year-tbody');
+  if (tbody) {
+    tbody.innerHTML = monthsList.map(mInfo => {
+      let mH = 0, mM = 0, mSt = 0;
+      Object.keys(all).forEach(ds => {
+        if (ds.startsWith(mInfo.key)) {
+          const e = all[ds];
+          mH += e.hours || 0;
+          mM += e.minutes || 0;
+          mSt += e.studies || 0;
+        }
+      });
+      mH += Math.floor(mM / 60);
+      mM = mM % 60;
+      grandH += mH; grandM += mM; grandStudies += mSt;
+
+      const repStr = (mH || mM) ? `${mH}h ${mM}m` : '-';
+      return `<tr>
+        <td style="font-weight:600">${mInfo.name}</td>
+        <td>${repStr}</td>
+        <td>0 h</td>
+        <td><b style="color:var(--green)">+${mH} h</b></td>
+      </tr>`;
+    }).join('');
+  }
+
+  grandH += Math.floor(grandM / 60);
+  grandM = grandM % 60;
+
+  const yH = document.getElementById('rep-year-hours');
+  if (yH) yH.textContent = grandH;
+  const yM = document.getElementById('rep-year-mins');
+  if (yM) yM.textContent = grandM;
+  const ySt = document.getElementById('rep-year-studies');
+  if (ySt) ySt.textContent = grandStudies;
+}
 
 // ============================================================
 // INIT
