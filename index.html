@@ -2308,7 +2308,7 @@ document.getElementById('btn-share-needed-whatsapp').onclick = () => {
     txt += `🛒 *${item.cart.nome} — ${item.cart.local}*\n  📆 ${DAY_NAMES[dt.getDay()]} (${fmtD(item.data)}) às 🕐 ${item.turno}\n  👤 Agendado: ${item.names} (Falta ${item.missing} companheiro)\n\n`;
   });
 
-  txt += `👉 *Acesse o aplicativo para apoiar:* https://henriquecfg2024.github.io/carrinhos-boturussu/`;
+  txt += `👉 *Acesse o aplicativo para apoiar:* https://tinyurl.com/carrinhos-publicacoes`;
 
   if (navigator.share) {
     navigator.share({ text: txt });
