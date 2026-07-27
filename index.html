@@ -629,6 +629,8 @@ small{font-size:.8rem}
         </div>
         <div id="weather-forecast" style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);overflow-x:auto"></div>
       </div>
+      <!-- Partner Needed Alert Card -->
+      <div id="partner-needed-card" style="display:none;margin-bottom:14px;"></div>
       <!-- Reminder 24h Card -->
       <div id="reminder-24h-card" style="display:none;margin-bottom:14px;"></div>
       <!-- Calendar -->
@@ -641,7 +643,11 @@ small{font-size:.8rem}
         <div class="cal-grid" id="cal-days-header"></div>
         <div class="cal-grid" id="cal-days"></div>
       </div>
-      <!-- Selected date label -->
+      <!-- Filter Chips & Selected date label -->
+      <div class="filter-row" style="margin-bottom:10px">
+        <button class="chip active" onclick="filterCartsNeeded(false,this)">Todos os Turnos</button>
+        <button class="chip" onclick="filterCartsNeeded(true,this)">⚠️ Precisam de Apoio</button>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <h3 id="selected-date-label" style="color:var(--navy)">📅 Carregando...</h3>
         <span id="selected-date-badge" class="badge badge-blue"></span>
@@ -973,6 +979,7 @@ small{font-size:.8rem}
         </table>
       </div>
       <button class="btn btn-success btn-full" id="btn-export-whatsapp" style="margin-top:16px">📤 Compartilhar Escala no WhatsApp</button>
+      <button class="btn btn-warning btn-full" id="btn-share-needed-whatsapp" style="margin-top:8px">📢 Convocação: Compartilhar Turnos Vagos no WhatsApp</button>
     </div>
     <!-- Config -->
     <div id="admin-config" style="display:none">
@@ -1246,6 +1253,7 @@ function initPubScreen(){
   renderCarts();
   updateBadges();
   checkNotifications();
+  checkPartnerNeeded();
   fetchWeather();
 }
 
@@ -1405,11 +1413,15 @@ function renderCarts(){
     div.className='cart-card';
     // slots HTML
     let slotsHtml='';
+    let visibleSlotsCount = 0;
     turnos.forEach(turno=>{
       const slotBookings=bookings.filter(b=>b.carrinhoId===cart.id&&b.data===selectedDate&&b.turno===turno&&b.status!=='cancelado');
       const mine=slotBookings.find(b=>b.usuarioId===currentUser.id);
       const count=slotBookings.length;
       const isFull=count>=cart.capMax;
+      const needsPartner = count > 0 && count < cart.capMin;
+      if (filterOnlyNeeded && !needsPartner) return;
+      visibleSlotsCount++;
       const inWaiting=waiting.find(w=>w.usuarioId===currentUser.id&&w.carrinhoId===cart.id&&w.data===selectedDate&&w.turno===turno);
       const names=slotBookings.map(b=>b.usuarioNome.split(' ')[0]).join(', ')||'Nenhum confirmado';
       // Check if can book
@@ -1805,6 +1817,74 @@ function triggerNativeNotification(booking) {
   }
 }
 
+// --- PARTNER NEEDED ALERTS & FILTERS ---
+let filterOnlyNeeded = false;
+
+function filterCartsNeeded(onlyNeeded, el) {
+  filterOnlyNeeded = onlyNeeded;
+  document.querySelectorAll('.filter-row .chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCarts();
+}
+
+function checkPartnerNeeded() {
+  const card = document.getElementById('partner-needed-card');
+  if (!card) return;
+
+  const bookings = load('bookings') || [];
+  const carts = load('carts') || [];
+  const turnos = load('turnos') || [];
+  const today = todayStr();
+
+  const neededShifts = [];
+
+  for (let i = 0; i < 7; i++) {
+    const ds = addDays(today, i);
+    carts.filter(c => c.ativo).forEach(cart => {
+      turnos.forEach(turno => {
+        const slotBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === ds && b.turno === turno && b.status !== 'cancelado');
+        const count = slotBookings.length;
+        if (count > 0 && count < cart.capMin) {
+          const alreadyMine = slotBookings.some(b => b.usuarioId === currentUser.id);
+          if (!alreadyMine) {
+            neededShifts.push({
+              cart,
+              data: ds,
+              turno,
+              b: slotBookings[0],
+              count
+            });
+          }
+        }
+      });
+    });
+  }
+
+  if (neededShifts.length > 0) {
+    const item = neededShifts[0];
+    const shiftDate = new Date(item.data + 'T12:00:00');
+    const isToday = item.data === today;
+    const dateLabel = isToday ? 'hoje' : 'em ' + shiftDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+    card.innerHTML = `
+      <div style="background:linear-gradient(135deg, var(--navy), var(--blue));color:#fff;padding:14px 16px;border-radius:var(--radius);box-shadow:var(--shadow-md);position:relative;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:2rem">🤝</span>
+          <div style="flex:1">
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--yellow-light)">⚠️ Precisa de Companheiro(a)</div>
+            <div style="font-size:.95rem;font-weight:700;margin-top:2px">${item.b.usuarioNome.split(' ')[0]} agendou ${dateLabel} e precisa de apoio!</div>
+            <div style="font-size:.82rem;opacity:.95;margin-top:2px">📍 <b>${item.cart.nome} — ${item.cart.local}</b> • 🕒 <b>${item.turno}</b></div>
+          </div>
+        </div>
+        <button class="btn btn-warning btn-sm btn-full" style="margin-top:12px;font-weight:700" onclick="createBooking('${item.cart.id}','${item.data}','${item.turno}')">🤝 Apoiar este turno com o(a) irmão(ã) →</button>
+      </div>
+    `;
+    card.style.display = 'block';
+  } else {
+    card.style.display = 'none';
+  }
+}
+
 // ============================================================
 // ADMIN SCREEN
 // ============================================================
@@ -2195,6 +2275,51 @@ function renderReports(){
   }).filter(u=>u.total>0).sort((a,b)=>b.total-a.total);
   document.getElementById('report-tbody').innerHTML=pubStats.length?pubStats.map(p=>`<tr><td>${p.nome}</td><td>${p.total}</td><td>${p.present}</td><td><b style="color:${p.rate>=70?'var(--green)':'var(--yellow)'}">${p.rate}%</b></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--gray-400)">Sem dados no período</td></tr>';
 }
+
+document.getElementById('btn-share-needed-whatsapp').onclick = () => {
+  const bookings = load('bookings') || [];
+  const carts = load('carts') || [];
+  const turnos = load('turnos') || [];
+  const today = todayStr();
+
+  const neededList = [];
+  for (let i = 0; i < 7; i++) {
+    const ds = addDays(today, i);
+    carts.filter(c => c.ativo).forEach(cart => {
+      turnos.forEach(turno => {
+        const slotBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === ds && b.turno === turno && b.status !== 'cancelado');
+        const count = slotBookings.length;
+        if (count > 0 && count < cart.capMin) {
+          neededList.push({ cart, data: ds, turno, names: slotBookings.map(b => b.usuarioNome.split(' ')[0]).join(', '), missing: cart.capMin - count });
+        }
+      });
+    });
+  }
+
+  if (!neededList.length) {
+    toast('Não há turnos necessitando de apoio nos próximos 7 dias! 🎉', 'info');
+    return;
+  }
+
+  let txt = `📢 *SOLICITAÇÃO DE APOIO NOS CARRINHOS*\n*Congregação Boturussu*\n\nOs seguintes turnos possuem apenas 1 irmão(ã) agendado(a) e precisam de companheiro(a):\n\n`;
+
+  neededList.forEach(item => {
+    const dt = new Date(item.data + 'T12:00:00');
+    txt += `🛒 *${item.cart.nome} — ${item.cart.local}*\n  📆 ${DAY_NAMES[dt.getDay()]} (${fmtD(item.data)}) às 🕐 ${item.turno}\n  👤 Agendado: ${item.names} (Falta ${item.missing} companheiro)\n\n`;
+  });
+
+  txt += `👉 *Acesse o aplicativo para apoiar:* https://henriquecfg2024.github.io/carrinhos-boturussu/`;
+
+  if (navigator.share) {
+    navigator.share({ text: txt });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt);
+    toast('Convocação copiada! Cole no WhatsApp da congregação.', 'success', 4000);
+  } else {
+    const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    toast('Convocação copiada!', 'success');
+  }
+};
 
 document.getElementById('btn-export-whatsapp').onclick=()=>{
   const [start,end]=getPeriodRange();
