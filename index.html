@@ -2389,6 +2389,43 @@ document.getElementById('btn-register').onclick=()=>{
 // Logout
 document.getElementById('btn-logout-pub').onclick=logout;
 document.getElementById('btn-logout-admin').onclick=logout;
+
+// Notificações / Sininho
+const btnNotif = document.getElementById('btn-notif');
+if (btnNotif) {
+  btnNotif.onclick = async () => {
+    const bookings = load('bookings') || [];
+    const now = new Date();
+    const myUpcoming = bookings.filter(b => {
+      if (b.usuarioId !== currentUser.id || b.status !== 'agendado') return false;
+      const shiftStart = new Date(b.data + 'T' + b.turno.split('-')[0] + ':00');
+      return shiftStart >= now;
+    }).sort((a, b) => a.data.localeCompare(b.data) || a.turno.localeCompare(b.turno));
+
+    if (!myUpcoming.length) {
+      modal({
+        title: '🔔 Notificações',
+        desc: 'Você não possui lembretes ou turnos futuros agendados.',
+        actions: [{ label: 'Fechar', cls: 'btn-primary', value: 'ok' }]
+      });
+      return;
+    }
+
+    const listHtml = myUpcoming.map(b => `
+      <div style="background:var(--gray-50);padding:12px;border-radius:var(--radius-sm);margin-bottom:8px;border-left:4px solid var(--blue)">
+        <div style="font-weight:700;font-size:.9rem">${b.carrinhoNome}</div>
+        <div style="font-size:.88rem;color:var(--gray-600);margin-top:2px">📅 <b>${fmtD(b.data)}</b> &nbsp; 🕐 <b>${b.turno}</b></div>
+        <div style="font-size:.75rem;color:var(--blue);margin-top:4px">🔵 Turno agendado</div>
+      </div>
+    `).join('');
+
+    modal({
+      title: `🔔 Lembretes de Turnos (${myUpcoming.length})`,
+      html: `<div style="max-height:260px;overflow-y:auto;margin:10px 0">${listHtml}</div>`,
+      actions: [{ label: 'Entendido', cls: 'btn-primary', value: 'ok' }]
+    });
+  };
+}
 // Toggle: Admin/Master <-> Agendamentos
 document.getElementById('btn-admin-to-pub').onclick=()=>{
   showScreen('pub');
