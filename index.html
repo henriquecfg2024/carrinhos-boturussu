@@ -563,6 +563,25 @@ small{font-size:.8rem}
     <div id="register-form" style="display:none">
       <h3 style="color:var(--navy);margin-bottom:16px">📝 Solicitar Cadastro</h3>
       <div class="form-group">
+        <label class="form-label">🏛️ Sua Congregação</label>
+        <select class="form-control" id="reg-congregacao" onchange="onCongregacaoSelectChange(this)"></select>
+      </div>
+      <div id="new-cong-fields" style="display:none;background:var(--blue-pale);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--navy);margin-bottom:8px">➕ Cadastrar Nova Congregação</div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label" style="font-size:.78rem">Nome da Congregação</label>
+          <input class="form-control" id="reg-new-cong-name" placeholder="Ex: Vila Matilde"/>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label" style="font-size:.78rem">Cidade / Estado</label>
+          <input class="form-control" id="reg-new-cong-city" placeholder="Ex: São Paulo / SP"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" style="font-size:.78rem">Código de Acesso da Congregação</label>
+          <input class="form-control" id="reg-new-cong-code" placeholder="Ex: VILA-MATILDE" style="text-transform:uppercase"/>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Nome completo</label>
         <input class="form-control" id="reg-name" type="text" placeholder="Irmão / Irmã..."/>
       </div>
@@ -1113,34 +1132,81 @@ const todayStr = () => new Date().toISOString().split('T')[0];
 
 const addDays = (d,n) => { const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; };
 
+function getCongregacaoId() {
+  return currentUser ? (currentUser.congregacaoId || 'boturussu') : 'boturussu';
+}
+
+function getCongregacaoAtual() {
+  const list = load('congregacoes') || [];
+  const cid = getCongregacaoId();
+  return list.find(c => c.id === cid) || { id: 'boturussu', nome: 'Congregação Boturussu', cidade: 'São Paulo/SP' };
+}
+
 // ============================================================
-// SEED DATA
+// SEED DATA & MULTI-TENANT MIGRATION
 // ============================================================
-// Perfis: 'master' (tudo), 'administrador' (dashboard+relatorios), 'publicador' (agendamentos)
 function seedData(toSupabase = false){
   const saveFn = toSupabase ? save : saveLocalOnly;
-  // Master user
-  if(!load('users')){
-    const admin = { id:uuid(), nome:'Administrador', telefone:'admin', senha:encPwd('admin123'), perfil:'master', status:'ativo', dataCadastro:now() };
-    saveFn('users',[admin]);
+
+  // 1. Congregações
+  let congregacoes = load('congregacoes');
+  if (!congregacoes || !congregacoes.length) {
+    congregacoes = [
+      { id: 'boturussu', nome: 'Congregação Boturussu', cidade: 'São Paulo / SP', codigo: 'BOTURUSSU', ativa: true, criadaEm: now() }
+    ];
+    saveFn('congregacoes', congregacoes);
   }
-  // Carts
-  if(!load('carts')){
-    saveFn('carts',[
-      { id:'c1', nome:'Carrinho 1', local:'Padaria União', descricao:'Ponto de Táxi', endereco:'Padaria União', googleMapsUrl:'https://www.google.com/maps/search/Padaria+União', ativo:true, capMax:3, capMin:2 },
-      { id:'c2', nome:'Carrinho 2', local:'CAPS', descricao:'Ponto de Ônibus', endereco:'CAPS', googleMapsUrl:'https://www.google.com/maps/search/CAPS+Centro+de+Atenção+Psicossocial', ativo:true, capMax:3, capMin:2 },
-      { id:'c3', nome:'Carrinho 3', local:'Padaria Lucidina', descricao:'Ponto de Ônibus', endereco:'Padaria Lucidina', googleMapsUrl:'https://www.google.com/maps/search/Padaria+Lucidina', ativo:true, capMax:3, capMin:2 }
-    ]);
+
+  // 2. Users (Garante congregacaoId: 'boturussu' para existentes)
+  let users = load('users');
+  if (!users) {
+    const admin = { id:uuid(), nome:'Administrador', telefone:'admin', senha:encPwd('admin123'), perfil:'master', status:'ativo', congregacaoId:'boturussu', dataCadastro:now() };
+    users = [admin];
+    saveFn('users', users);
+  } else {
+    let updated = false;
+    users = users.map(u => {
+      if (!u.congregacaoId) { u.congregacaoId = 'boturussu'; updated = true; }
+      return u;
+    });
+    if (updated) saveFn('users', users);
   }
-  // Turns
+
+  // 3. Carts (Garante congregacaoId: 'boturussu')
+  let carts = load('carts');
+  if (!carts) {
+    carts = [
+      { id:'c1', nome:'Carrinho 1', local:'Padaria União', descricao:'Ponto de Táxi', endereco:'Padaria União', googleMapsUrl:'https://www.google.com/maps/search/Padaria+União', ativo:true, capMax:3, capMin:2, congregacaoId:'boturussu' },
+      { id:'c2', nome:'Carrinho 2', local:'CAPS', descricao:'Ponto de Ônibus', endereco:'CAPS', googleMapsUrl:'https://www.google.com/maps/search/CAPS+Centro+de+Atenção+Psicossocial', ativo:true, capMax:3, capMin:2, congregacaoId:'boturussu' },
+      { id:'c3', nome:'Carrinho 3', local:'Padaria Lucidina', descricao:'Ponto de Ônibus', endereco:'Padaria Lucidina', googleMapsUrl:'https://www.google.com/maps/search/Padaria+Lucidina', ativo:true, capMax:3, capMin:2, congregacaoId:'boturussu' }
+    ];
+    saveFn('carts', carts);
+  } else {
+    let updated = false;
+    carts = carts.map(c => {
+      if (!c.congregacaoId) { c.congregacaoId = 'boturussu'; updated = true; }
+      return c;
+    });
+    if (updated) saveFn('carts', carts);
+  }
+
+  // 4. Bookings, waiting, logs, blocked
+  ['bookings', 'waiting', 'logs', 'blocked'].forEach(k => {
+    let list = load(k);
+    if (!list) {
+      saveFn(k, []);
+    } else if (list.length) {
+      let updated = false;
+      list = list.map(item => {
+        if (typeof item === 'object' && !item.congregacaoId) { item.congregacaoId = 'boturussu'; updated = true; }
+        return item;
+      });
+      if (updated) saveFn(k, list);
+    }
+  });
+
   if(!load('turnos')) saveFn('turnos',['08:00-10:00','10:00-12:00','14:00-16:00','16:00-18:00']);
-  // Config
   if(!load('config')) saveFn('config',{ minHours:2 });
-  // Bookings, logs, waiting
-  if(!load('bookings')) saveFn('bookings',[]);
-  if(!load('logs')) saveFn('logs',[]);
-  if(!load('waiting')) saveFn('waiting',[]);
-  if(!load('blocked')) saveFn('blocked',[]);
 }
 
 // ============================================================
@@ -1714,7 +1780,8 @@ function bookingCard(b,showActions){
 }
 
 function renderMyWaiting(){
-  const waiting=load('waiting')||[];
+  const currentCongId = getCongregacaoId();
+  const waiting=(load('waiting')||[]).filter(w=>w.congregacaoId===currentCongId);
   const mine=waiting.filter(w=>w.usuarioId===currentUser.id);
   const container=document.getElementById('my-waiting-list');
   if(!mine.length){ container.innerHTML='<div class="empty-state"><span class="empty-icon">⏳</span><h3>Sem filas de espera</h3><p>Você não está em nenhuma lista de espera</p></div>'; return; }
@@ -1947,9 +2014,10 @@ function switchAdminTab(tab,el){
 
 // --- DASHBOARD ---
 function renderAdminDashboard(){
-  const bookings=load('bookings')||[];
-  const users=load('users')||[];
-  const waiting=load('waiting')||[];
+  const currentCongId = getCongregacaoId();
+  const bookings=(load('bookings')||[]).filter(b=>b.congregacaoId===currentCongId);
+  const users=(load('users')||[]).filter(u=>u.congregacaoId===currentCongId);
+  const waiting=(load('waiting')||[]).filter(w=>w.congregacaoId===currentCongId);
   const today=todayStr();
   const todayB=bookings.filter(b=>b.data===today&&b.status!=='cancelado');
   const pending=users.filter(u=>u.status==='pendente');
@@ -2022,7 +2090,8 @@ function renderAdminDashboard(){
 
 // --- USERS ---
 function renderAdminUsers(){
-  const users=load('users')||[];
+  const currentCongId = getCongregacaoId();
+  const users=(load('users')||[]).filter(u=>u.congregacaoId===currentCongId);
   const filtered=userFilter==='all'?users:users.filter(u=>u.status===userFilter);
   const container=document.getElementById('admin-user-list');
   if(!filtered.length){ container.innerHTML='<div class="empty-state"><span class="empty-icon">👥</span><h3>Nenhum usuário encontrado</h3></div>'; return; }
@@ -2491,23 +2560,105 @@ document.getElementById('btn-login').onclick=()=>{
   }
 };
 document.getElementById('login-pass').onkeydown=e=>{ if(e.key==='Enter') document.getElementById('btn-login').click(); };
-document.getElementById('btn-goto-register').onclick=()=>{ document.getElementById('login-form').style.display='none'; document.getElementById('register-form').style.display='block'; };
+function renderCongregacaoOptions() {
+  const sel = document.getElementById('reg-congregacao');
+  if (!sel) return;
+  const list = load('congregacoes') || [];
+  let html = list.filter(c => c.ativa).map(c => `
+    <option value="${c.id}">${c.nome} (${c.cidade || 'SP'})</option>
+  `).join('');
+  html += `<option value="new_cong">➕ Cadastrar Nova Congregação</option>`;
+  sel.innerHTML = html;
+}
+
+function onCongregacaoSelectChange(sel) {
+  const div = document.getElementById('new-cong-fields');
+  if (div) div.style.display = sel.value === 'new_cong' ? 'block' : 'none';
+}
+
+document.getElementById('btn-goto-register').onclick=()=>{
+  document.getElementById('login-form').style.display='none';
+  document.getElementById('register-form').style.display='block';
+  renderCongregacaoOptions();
+};
 document.getElementById('btn-back-login').onclick=()=>{ document.getElementById('register-form').style.display='none'; document.getElementById('login-form').style.display='block'; };
 document.getElementById('btn-register').onclick=()=>{
   const nome=document.getElementById('reg-name').value.trim();
   const phone=document.getElementById('reg-phone').value.trim();
   const pass=document.getElementById('reg-pass').value;
   const pass2=document.getElementById('reg-pass2').value;
+  const congSel=document.getElementById('reg-congregacao').value;
+
   if(!nome||!phone||!pass||!pass2){ toast('Preencha todos os campos.','error'); return; }
   if(pass.length<6){ toast('A senha deve ter pelo menos 6 caracteres.','error'); return; }
   if(pass!==pass2){ toast('As senhas não coincidem.','error'); return; }
   const users=load('users')||[];
   if(users.find(u=>u.telefone===phone)){ toast('Este telefone já está cadastrado.','error'); return; }
-  const u={ id:uuid(), nome, telefone:phone, senha:encPwd(pass), perfil:'publicador', status:'pendente', dataCadastro:now() };
+
+  let congId = congSel;
+  let userPerfil = 'publicador';
+  let userStatus = 'pendente';
+
+  if (congSel === 'new_cong') {
+    const newName = document.getElementById('reg-new-cong-name').value.trim();
+    const newCity = document.getElementById('reg-new-cong-city').value.trim();
+    const newCode = document.getElementById('reg-new-cong-code').value.trim().toUpperCase();
+
+    if (!newName || !newCity || !newCode) {
+      toast('Preencha os dados da nova congregação.', 'error');
+      return;
+    }
+
+    const congregacoes = load('congregacoes') || [];
+    if (congregacoes.find(c => c.codigo === newCode)) {
+      toast('Este código de congregação já está em uso.', 'error');
+      return;
+    }
+
+    congId = uuid();
+    const formattedName = 'Congregação ' + newName.replace(/^Congregação\s+/i, '');
+    const newCong = {
+      id: congId,
+      nome: formattedName,
+      cidade: newCity,
+      codigo: newCode,
+      ativa: true,
+      criadaEm: now()
+    };
+    congregacoes.push(newCong);
+    save('congregacoes', congregacoes);
+
+    // Carrinho inicial para a nova congregação
+    const carts = load('carts') || [];
+    carts.push({
+      id: uuid(),
+      nome: 'Carrinho 1',
+      local: 'Ponto Central',
+      descricao: 'Ponto Principal',
+      endereco: 'Ponto Principal',
+      googleMapsUrl: '',
+      ativo: true,
+      capMax: 3,
+      capMin: 2,
+      congregacaoId: congId
+    });
+    save('carts', carts);
+
+    userPerfil = 'administrador';
+    userStatus = 'ativo';
+  }
+
+  const u={ id:uuid(), nome, telefone:phone, senha:encPwd(pass), perfil:userPerfil, status:userStatus, congregacaoId:congId, dataCadastro:now() };
   users.push(u);
   save('users',users);
-  addLog(u.id,u.nome,'USUARIO_CADASTRADO',`Solicitação de cadastro enviada`);
-  toast('Solicitação enviada! Aguarde a aprovação do administrador.','success',5000);
+  addLog(u.id,u.nome,'USUARIO_CADASTRADO',`Cadastrado (${userPerfil})`);
+
+  if (userPerfil === 'administrador') {
+    toast('Congregação criada com sucesso! Você é o administrador local. Faça login para acessar.', 'success', 6000);
+  } else {
+    toast('Solicitação enviada! Aguarde a aprovação do administrador da sua congregação.', 'success', 5000);
+  }
+
   document.getElementById('register-form').style.display='none';
   document.getElementById('login-form').style.display='block';
   document.getElementById('reg-name').value='';
