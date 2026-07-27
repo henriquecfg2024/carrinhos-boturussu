@@ -1187,9 +1187,13 @@ function modal({title,desc,html='',actions=[],center=false}){
     document.getElementById('modal-container').appendChild(ov);
     ov.addEventListener('click',e=>{ if(e.target===ov){cleanup();resolve(null);} });
     actions.forEach((a,i)=>{
-      ov.querySelector(`#modal-btn-${i}`).onclick=()=>{ cleanup(); resolve(a.value); };
+      ov.querySelector(`#modal-btn-${i}`).onclick=()=>{
+        const val = a.value;
+        resolve(val);
+        setTimeout(cleanup, 50);
+      };
     });
-    function cleanup(){ ov.remove(); }
+    function cleanup(){ if(ov.parentNode) ov.remove(); }
   });
 }
 
