@@ -2184,9 +2184,10 @@ function renderAdminDashboard(){
   const recentForgotLogs = (load('logs') || []).filter(l => l.acao === 'RECUPERACAO_SENHA_SOLICITADA' && !l.resolvido && !l.dismissed);
   if (recentForgotLogs.length) {
     recentForgotLogs.forEach(lastForgot => {
+      const identifier = lastForgot.id || lastForgot.timestamp || lastForgot.usuarioNome || 'all';
       alerts += `<div class="alert-item" style="border-left-color:var(--yellow);display:flex;align-items:center;justify-content:space-between">
         <span>🔑 <b>Solicitação de Senha:</b> ${lastForgot.usuarioNome} (${fmtDT(lastForgot.timestamp)})</span>
-        <button class="btn-pwa-close" onclick="dismissForgotAlert('${lastForgot.id}')" title="Dispensar alerta" style="background:var(--gray-200);color:var(--gray-700);width:22px;height:22px;font-size:0.75rem;margin-left:8px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">✕</button>
+        <button type="button" class="btn-pwa-close" onclick="dismissForgotAlert('${identifier}', event)" title="Dispensar alerta" style="background:var(--gray-200);color:var(--gray-700);width:24px;height:24px;font-size:0.85rem;margin-left:8px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">✕</button>
       </div>`;
     });
   }
@@ -2243,6 +2244,45 @@ function renderAdminDashboard(){
     </div>`).join('')
     :'<p style="color:var(--gray-400);font-size:.85rem">Nenhum cadastro pendente</p>';
   document.getElementById('admin-pending-users').innerHTML=pendingHtml;
+}
+
+function dismissForgotAlert(logIdentifier, event){
+  if (event) {
+    if (typeof event.preventDefault === 'function') event.preventDefault();
+    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+  }
+  const logs = load('logs') || [];
+  let updated = false;
+  logs.forEach(l => {
+    if (l.acao === 'RECUPERACAO_SENHA_SOLICITADA') {
+      if (!logIdentifier || logIdentifier === 'all' || l.id === logIdentifier || l.timestamp === logIdentifier || l.usuarioNome === logIdentifier) {
+        l.resolvido = true;
+        l.dismissed = true;
+        updated = true;
+      }
+    }
+  });
+
+  if (!updated) {
+    logs.forEach(l => {
+      if (l.acao === 'RECUPERACAO_SENHA_SOLICITADA') {
+        l.resolvido = true;
+        l.dismissed = true;
+        updated = true;
+      }
+    });
+  }
+
+  if (updated) {
+    save('logs', logs);
+  }
+
+  if (typeof renderAdminDashboard === 'function') {
+    renderAdminDashboard();
+  }
+  if (typeof toast === 'function') {
+    toast('Alerta de solicitação de senha dispensado com sucesso! ✅', 'success');
+  }
 }
 
 // --- USERS ---
