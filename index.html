@@ -2181,10 +2181,14 @@ function renderAdminDashboard(){
   const now2=new Date();
   const next4h=new Date(now2.getTime()+4*3600000);
 
-  const recentForgotLogs = (load('logs') || []).filter(l => l.acao === 'RECUPERACAO_SENHA_SOLICITADA');
+  const recentForgotLogs = (load('logs') || []).filter(l => l.acao === 'RECUPERACAO_SENHA_SOLICITADA' && !l.resolvido && !l.dismissed);
   if (recentForgotLogs.length) {
-    const lastForgot = recentForgotLogs[0];
-    alerts += `<div class="alert-item" style="border-left-color:var(--yellow)">🔑 <b>Solicitação de Senha:</b> ${lastForgot.usuarioNome} (${fmtDT(lastForgot.timestamp)})</div>`;
+    recentForgotLogs.forEach(lastForgot => {
+      alerts += `<div class="alert-item" style="border-left-color:var(--yellow);display:flex;align-items:center;justify-content:space-between">
+        <span>🔑 <b>Solicitação de Senha:</b> ${lastForgot.usuarioNome} (${fmtDT(lastForgot.timestamp)})</span>
+        <button class="btn-pwa-close" onclick="dismissForgotAlert('${lastForgot.id}')" title="Dispensar alerta" style="background:var(--gray-200);color:var(--gray-700);width:22px;height:22px;font-size:0.75rem;margin-left:8px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">✕</button>
+      </div>`;
+    });
   }
 
   carts.filter(c=>c.ativo).forEach(cart=>{
