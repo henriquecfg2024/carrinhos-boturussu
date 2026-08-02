@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>🛒 Agenda do Carrinho de Publicações</title>
 <meta name="description" content="Sistema de agendamento para o Carrinho de Publicações da congregação das Testemunhas de Jeová. Escolha o local, dia e horário."/>
+<!-- PWA & Mobile Native Meta Tags -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#1a3a5c"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Agenda Carrinho"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -62,6 +71,24 @@
   --blue:#7c3aed;
   --blue-light:#8b5cf6;
   --blue-pale:#f3e8ff;
+}
+.app[data-theme="high-contrast"]{
+  --navy:#000000;
+  --blue:#003366;
+  --blue-light:#004080;
+  --blue-pale:#e6f0ff;
+  --green:#006600;
+  --red:#990000;
+  --yellow:#885500;
+  --gray-100:#ffffff;
+  --gray-200:#000000;
+  --gray-800:#000000;
+  --white:#ffffff;
+  font-size:16px;
+}
+:focus-visible{
+  outline:3px solid var(--blue) !important;
+  outline-offset:2px !important;
 }
 html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
 body{
@@ -532,10 +559,95 @@ small{font-size:.8rem}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .stat-card .stat-value{font-size:1.3rem}
 }
+/* ===== PWA INSTALL BANNER & MOBILE NATIVE ===== */
+.pwa-banner{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+  color:var(--white);
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  box-shadow:var(--shadow-md);
+  font-size:.82rem;
+  position:sticky;
+  top:0;
+  z-index:9999;
+  animation:pwaSlideDown .3s cubic-bezier(.4,0,.2,1);
+}
+.pwa-banner-content{display:flex;align-items:center;gap:8px;flex:1}
+.pwa-banner-icon{font-size:1.2rem;flex-shrink:0}
+.pwa-banner-text{font-weight:500;line-height:1.3}
+.pwa-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-pwa-install{
+  background:var(--white);
+  color:var(--navy);
+  border:none;
+  padding:6px 14px;
+  border-radius:var(--radius-full);
+  font-weight:700;
+  font-size:.78rem;
+  cursor:pointer;
+  box-shadow:var(--shadow-sm);
+  transition:transform .15s ease,background .15s ease;
+  font-family:'Inter',sans-serif;
+  white-space:nowrap;
+}
+.btn-pwa-install:active{transform:scale(.95)}
+.btn-pwa-close{
+  background:rgba(255,255,255,.2);
+  color:var(--white);
+  border:none;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  font-size:.85rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.btn-pwa-close:hover{background:rgba(255,255,255,.35)}
+@keyframes pwaSlideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* iOS PWA Instructions Modal */
+.pwa-ios-modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+  z-index:10000;display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;animation:pwaFadeIn .2s ease-out;
+}
+.pwa-ios-modal{
+  background:var(--white);border-radius:var(--radius-lg);
+  padding:24px 20px 20px;width:100%;max-width:400px;
+  color:var(--gray-800);box-shadow:var(--shadow-lg);
+}
+.pwa-ios-modal h3{color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.pwa-ios-step{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:.88rem}
+.pwa-ios-step-num{
+  width:26px;height:26px;background:var(--blue-pale);color:var(--blue);
+  border-radius:50%;font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+@keyframes pwaFadeIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
-<div id="toast-container"></div>
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ==================== PWA INSTALL BANNER ==================== -->
+<div id="pwa-install-banner" class="pwa-banner" style="display:none">
+  <div class="pwa-banner-content">
+    <span class="pwa-banner-icon">📱</span>
+    <span class="pwa-banner-text">Instale o <strong>Agenda do Carrinho de Publicações</strong> no seu celular</span>
+  </div>
+  <div class="pwa-banner-actions">
+    <button id="btn-pwa-install" class="btn-pwa-install">Instalar</button>
+    <button id="btn-pwa-close" class="btn-pwa-close" aria-label="Fechar">✕</button>
+  </div>
+</div>
+
 <div class="app">
 
 <!-- ==================== LOGIN SCREEN ==================== -->
@@ -551,14 +663,32 @@ small{font-size:.8rem}
         <label class="form-label" for="login-phone">📱 Telefone (WhatsApp)</label>
         <input class="form-control" id="login-phone" type="tel" placeholder="(00) 00000-0000" inputmode="tel"/>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" for="login-pass">🔑 Senha</label>
         <input class="form-control" id="login-pass" type="password" placeholder="••••••••"/>
+      </div>
+      <div style="text-align:right;margin-bottom:16px">
+        <button type="button" id="btn-goto-forgot" style="background:none;border:none;color:var(--blue);font-size:.82rem;font-weight:600;cursor:pointer;text-decoration:none;font-family:'Inter',sans-serif">🔑 Esqueci minha senha</button>
       </div>
       <button class="btn btn-primary btn-full" id="btn-login" style="margin-top:4px">Entrar →</button>
       <div style="text-align:center;margin-top:16px">
         <button class="btn btn-ghost btn-full" id="btn-goto-register">✋ Solicitar Cadastro</button>
       </div>
+    </div>
+    <div id="forgot-form" style="display:none">
+      <h3 style="color:var(--navy);margin-bottom:8px">🔑 Esqueci Minha Senha</h3>
+      <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:16px">Digite o seu telefone (WhatsApp) cadastrado para localizar sua conta e enviar uma solicitação de redefinição de senha ao administrador da sua congregação.</p>
+      <div class="form-group">
+        <label class="form-label">📱 Telefone (WhatsApp)</label>
+        <input class="form-control" id="forgot-phone" type="tel" placeholder="(00) 00000-0000" inputmode="tel"/>
+      </div>
+      <div id="forgot-result" style="display:none;background:var(--blue-pale);padding:14px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:.85rem;color:var(--navy)">
+        <div style="font-weight:700;margin-bottom:4px" id="forgot-user-name"></div>
+        <div style="font-size:.78rem;color:var(--gray-600);margin-bottom:12px" id="forgot-cong-name"></div>
+        <a class="btn btn-success btn-full" id="btn-send-forgot-whatsapp" target="_blank" rel="noopener" style="text-decoration:none">📱 Solicitar Redefinição via WhatsApp</a>
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-search-forgot">Buscar Minha Conta</button>
+      <button class="btn btn-ghost btn-full" id="btn-back-login-forgot" style="margin-top:8px">← Voltar ao login</button>
     </div>
     <div id="register-form" style="display:none">
       <h3 style="color:var(--navy);margin-bottom:16px">📝 Solicitar Cadastro</h3>
@@ -881,6 +1011,7 @@ small{font-size:.8rem}
                 <option value="amber">🟡 Amber (Âmbar / Dourado)</option>
                 <option value="emerald">🟢 Esmeralda (Verde)</option>
                 <option value="purple">🟣 Roxo (Índigo)</option>
+                <option value="high-contrast">👁️ Alto Contraste (Acessibilidade Visual)</option>
               </select>
             </div>
           </div>
@@ -1221,13 +1352,15 @@ const LOG_ICONS={
   AGENDAMENTO_CRIADO:'✅',AGENDAMENTO_CANCELADO:'❌',
   CHECKIN_REALIZADO:'🟢',CHECKOUT_REALIZADO:'⚫',
   LISTA_ESPERA_ENTRADA:'⏳',LISTA_ESPERA_SAIDA:'🚫',LISTA_ESPERA_PROMOVIDO:'🎉',
-  USUARIO_CADASTRADO:'👤',USUARIO_APROVADO:'✔️',USUARIO_DESATIVADO:'🔒',LOGIN_REALIZADO:'🔐'
+  USUARIO_CADASTRADO:'👤',USUARIO_APROVADO:'✔️',USUARIO_DESATIVADO:'🔒',LOGIN_REALIZADO:'🔐',
+  RECUPERACAO_SENHA_SOLICITADA:'🔑'
 };
 const LOG_COLORS={
   AGENDAMENTO_CRIADO:'var(--green-light)',AGENDAMENTO_CANCELADO:'var(--red-light)',
   CHECKIN_REALIZADO:'var(--green-light)',CHECKOUT_REALIZADO:'var(--gray-100)',
   LISTA_ESPERA_ENTRADA:'var(--yellow-light)',LISTA_ESPERA_SAIDA:'var(--gray-100)',LISTA_ESPERA_PROMOVIDO:'var(--blue-pale)',
-  USUARIO_CADASTRADO:'var(--blue-pale)',USUARIO_APROVADO:'var(--green-light)',USUARIO_DESATIVADO:'var(--red-light)',LOGIN_REALIZADO:'var(--blue-pale)'
+  USUARIO_CADASTRADO:'var(--blue-pale)',USUARIO_APROVADO:'var(--green-light)',USUARIO_DESATIVADO:'var(--red-light)',LOGIN_REALIZADO:'var(--blue-pale)',
+  RECUPERACAO_SENHA_SOLICITADA:'var(--yellow-light)'
 };
 
 // ============================================================
@@ -1412,12 +1545,14 @@ function switchPubTab(tab, el){
 const DAY_NAMES=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTH_NAMES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+const DAY_NAMES_FULL=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
 function renderCalendar(){
   const y=calDate.getFullYear(), m=calDate.getMonth();
   document.getElementById('cal-month-label').textContent=`${MONTH_NAMES[m]} ${y}`;
   // Headers
   const hg=document.getElementById('cal-days-header');
-  hg.innerHTML=DAY_NAMES.map(d=>`<div class="cal-day-header">${d}</div>`).join('');
+  hg.innerHTML=DAY_NAMES.map(d=>`<div class="cal-day-header" aria-hidden="true">${d}</div>`).join('');
   // Days
   const first=new Date(y,m,1).getDay();
   const days=new Date(y,m+1,0).getDate();
@@ -1428,11 +1563,13 @@ function renderCalendar(){
   let html='';
   for(let i=0;i<first;i++){
     const d=prev-first+1+i;
-    html+=`<div class="cal-day other-month">${d}</div>`;
+    html+=`<div class="cal-day other-month" aria-hidden="true">${d}</div>`;
   }
   const today=todayStr();
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dtObj=new Date(ds+'T12:00:00');
+    const dayOfWeek=DAY_NAMES_FULL[dtObj.getDay()];
     const isSel=ds===selectedDate;
     const isToday=ds===today;
     const hasBook=myBookings.some(b=>b.data===ds);
@@ -1442,7 +1579,15 @@ function renderCalendar(){
     if(isToday) cls+=' today';
     if(isSel) cls+=' selected';
     if(hasBook) cls+=' has-booking';
-    html+=`<div class="${cls}" onclick="${isBlocked?'':'selectDate(\''+ds+'\')'}" data-date="${ds}">${d}</div>`;
+
+    let ariaStatus=[];
+    if(isToday) ariaStatus.push('Hoje');
+    if(isSel) ariaStatus.push('Selecionado');
+    if(hasBook) ariaStatus.push('Você tem agendamento');
+    if(isBlocked) ariaStatus.push('Data bloqueada');
+    const ariaLabel=`${dayOfWeek}, ${d} de ${MONTH_NAMES[m]} de ${y}${ariaStatus.length?'. '+ariaStatus.join(', '):''}`;
+
+    html+=`<div class="${cls}" role="button" tabindex="${isBlocked?'-1':'0'}" aria-label="${ariaLabel}" aria-pressed="${isSel}" onclick="${isBlocked?'':'selectDate(\''+ds+'\')'}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();if(!${isBlocked}){selectDate('${ds}');}}" data-date="${ds}">${d}</div>`;
   }
   document.getElementById('cal-days').innerHTML=html;
 }
@@ -1546,16 +1691,16 @@ function renderCarts(){
         ${warn}`;
     });
     div.innerHTML=`
-      <div class="cart-header" onclick="toggleCart('ch-${cart.id}','ct-${cart.id}',this)">
-        <span style="font-size:1.3rem">🛒</span>
+      <div class="cart-header" role="button" tabindex="0" aria-expanded="true" aria-label="${cart.nome} - ${cart.local}. Pressione Enter para recolher ou expandir os turnos" onclick="toggleCart('ch-${cart.id}','ct-${cart.id}',this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCart('ch-${cart.id}','ct-${cart.id}',this);}">
+        <span style="font-size:1.3rem" aria-hidden="true">🛒</span>
         <div style="flex:1">
           <div class="cart-name">${cart.nome} — ${cart.local}</div>
           <div class="cart-loc">${cart.descricao}</div>
         </div>
-        <span class="cart-toggle">▾</span>
+        <span class="cart-toggle" aria-hidden="true">▾</span>
       </div>
       <div class="cart-body" id="ct-${cart.id}">
-        <a class="maps-link" href="${cart.googleMapsUrl}" target="_blank" rel="noopener">📍 Ver no Google Maps</a>
+        <a class="maps-link" href="${cart.googleMapsUrl}" target="_blank" rel="noopener" aria-label="Abrir localização de ${cart.local} no Google Maps">📍 Ver no Google Maps</a>
         <div style="padding-bottom:12px">${slotsHtml}</div>
       </div>`;
     container.appendChild(div);
@@ -1566,6 +1711,7 @@ function toggleCart(hid,bid,hdr){
   const body=document.getElementById(bid);
   const collapsed=body.classList.toggle('hidden');
   hdr.classList.toggle('collapsed',collapsed);
+  hdr.setAttribute('aria-expanded', !collapsed);
 }
 
 // --- BOOKING ACTIONS ---
@@ -2034,6 +2180,13 @@ function renderAdminDashboard(){
   let alertCount=0;
   const now2=new Date();
   const next4h=new Date(now2.getTime()+4*3600000);
+
+  const recentForgotLogs = (load('logs') || []).filter(l => l.acao === 'RECUPERACAO_SENHA_SOLICITADA');
+  if (recentForgotLogs.length) {
+    const lastForgot = recentForgotLogs[0];
+    alerts += `<div class="alert-item" style="border-left-color:var(--yellow)">🔑 <b>Solicitação de Senha:</b> ${lastForgot.usuarioNome} (${fmtDT(lastForgot.timestamp)})</div>`;
+  }
+
   carts.filter(c=>c.ativo).forEach(cart=>{
     turnos.forEach(turno=>{
       if(alertCount>=6) return;
@@ -2560,6 +2713,64 @@ document.getElementById('btn-login').onclick=()=>{
   }
 };
 document.getElementById('login-pass').onkeydown=e=>{ if(e.key==='Enter') document.getElementById('btn-login').click(); };
+
+// Forgot password handlers
+document.getElementById('btn-goto-forgot').onclick = () => {
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('register-form').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'block';
+  document.getElementById('forgot-result').style.display = 'none';
+  document.getElementById('forgot-phone').value = '';
+};
+
+document.getElementById('btn-back-login-forgot').onclick = () => {
+  document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('login-form').style.display = 'block';
+};
+
+document.getElementById('btn-search-forgot').onclick = () => {
+  const phone = document.getElementById('forgot-phone').value.trim();
+  if (!phone) { toast('Digite o seu telefone (WhatsApp).', 'error'); return; }
+
+  const users = load('users') || [];
+  const u = users.find(x => x.telefone === phone);
+  if (!u) {
+    toast('Nenhuma conta encontrada com este telefone.', 'error');
+    document.getElementById('forgot-result').style.display = 'none';
+    return;
+  }
+
+  const congregacoes = load('congregacoes') || [];
+  const cong = congregacoes.find(c => c.id === u.congregacaoId) || { nome: 'Congregação Boturussu' };
+
+  // Encontrar o administrador da congregação
+  const admin = users.find(x => x.congregacaoId === u.congregacaoId && ['master', 'administrador'].includes(x.perfil));
+  const adminPhone = admin ? admin.telefone : '';
+  const adminName = admin ? admin.nome : 'Administrador';
+
+  document.getElementById('forgot-user-name').textContent = `👤 Conta encontrada: ${u.nome}`;
+  document.getElementById('forgot-cong-name').textContent = `🏛️ ${cong.nome}${admin ? ` • Admin: ${adminName}` : ''}`;
+
+  let cleanAdminPhone = adminPhone.replace(/\D/g, '');
+  if (cleanAdminPhone.length >= 10 && !cleanAdminPhone.startsWith('55')) {
+    cleanAdminPhone = '55' + cleanAdminPhone;
+  }
+
+  const msg = encodeURIComponent(`Olá, ${adminName}! Esqueci minha senha de acesso no app Agenda do Carrinho.\n\n👤 Nome: ${u.nome}\n📱 Telefone: ${u.telefone}\n🏛️ Congregação: ${cong.nome}\n\nPoderia redefinir minha senha para a senha padrão (123456), por favor?`);
+
+  const btnWa = document.getElementById('btn-send-forgot-whatsapp');
+  if (cleanAdminPhone) {
+    btnWa.href = `https://wa.me/${cleanAdminPhone}?text=${msg}`;
+  } else {
+    btnWa.href = `https://api.whatsapp.com/send?text=${msg}`;
+  }
+
+  addLog(u.id, u.nome, 'RECUPERACAO_SENHA_SOLICITADA', `Solicitou redefinição de senha via WhatsApp (${cong.nome})`);
+
+  document.getElementById('forgot-result').style.display = 'block';
+  toast('Conta localizada! Clique no botão abaixo para enviar mensagem ao administrador.', 'success', 5000);
+};
+document.getElementById('forgot-phone').onkeydown = e => { if (e.key === 'Enter') document.getElementById('btn-search-forgot').click(); };
 function renderCongregacaoOptions() {
   const sel = document.getElementById('reg-congregacao');
   if (!sel) return;
@@ -3132,9 +3343,122 @@ function renderReportYear() {
 }
 
 // ============================================================
+// PWA & SERVICE WORKER & MOBILE NATIVE INSTALLATION LOGIC
+// ============================================================
+let deferredPrompt = null;
+
+function isRunningStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true ||
+         document.referrer.includes('android-app://');
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function initPWA() {
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        console.log('SW registrado com sucesso:', reg.scope);
+      }).catch((err) => {
+        console.warn('Falha no registro do SW:', err);
+      });
+    });
+  }
+
+  // If already running as installed app (standalone) or user dismissed banner, don't show
+  if (isRunningStandalone() || localStorage.getItem('pwa_banner_dismissed') === 'true') {
+    return;
+  }
+
+  const banner = document.getElementById('pwa-install-banner');
+  const installBtn = document.getElementById('btn-pwa-install');
+  const closeBtn = document.getElementById('btn-pwa-close');
+
+  if (!banner || !installBtn || !closeBtn) return;
+
+  // Listen for beforeinstallprompt (Android / Chrome / Edge / Samsung Internet)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    banner.style.display = 'flex';
+  });
+
+  // Handle iOS Safari banner
+  if (isIOS() && !isRunningStandalone()) {
+    banner.style.display = 'flex';
+  }
+
+  // Install button handler
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('Instalação PWA outcome:', outcome);
+      deferredPrompt = null;
+      banner.style.display = 'none';
+    } else if (isIOS()) {
+      showIOSInstallInstructions();
+    } else {
+      banner.style.display = 'none';
+      if (typeof showToast === 'function') {
+        showToast('Para instalar, abra as opções do seu navegador e toque em "Adicionar à Tela de Início".');
+      }
+    }
+  });
+
+  // Close button handler
+  closeBtn.addEventListener('click', () => {
+    banner.style.display = 'none';
+    localStorage.setItem('pwa_banner_dismissed', 'true');
+  });
+
+  // Hide banner if app transitions to standalone
+  if (window.matchMedia) {
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', (evt) => {
+      if (evt.matches) {
+        banner.style.display = 'none';
+      }
+    });
+  }
+}
+
+function showIOSInstallInstructions() {
+  const existingModal = document.getElementById('pwa-ios-modal-overlay');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'pwa-ios-modal-overlay';
+  modal.className = 'pwa-ios-modal-overlay';
+  modal.innerHTML = `
+    <div class="pwa-ios-modal">
+      <h3>📱 Como instalar no iOS (Safari)</h3>
+      <div class="pwa-ios-step">
+        <span class="pwa-ios-step-num">1</span>
+        <span>Toque no botão <strong>Compartilhar</strong> (ícone <span style="font-size:1.1rem">⎋</span> com seta para cima) na barra inferior do Safari.</span>
+      </div>
+      <div class="pwa-ios-step">
+        <span class="pwa-ios-step-num">2</span>
+        <span>Role as opções para baixo e selecione <strong>"Adicionar à Tela de Início" ➕</strong>.</span>
+      </div>
+      <div class="pwa-ios-step">
+        <span class="pwa-ios-step-num">3</span>
+        <span>Toque em <strong>"Adicionar"</strong> no canto superior direito.</span>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="document.getElementById('pwa-ios-modal-overlay').remove()">Entendido!</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function initApp() {
+  initPWA();
   await syncWithSupabase();
   selectDate(todayStr());
 }
