@@ -1339,16 +1339,18 @@ function seedData(toSupabase = false){
 
   let turnos = load('turnos');
   if (!turnos || !turnos.length) {
-    turnos = ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '17:00-19:00', '18:00-20:00'];
+    turnos = ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
     save('turnos', turnos);
   } else {
     let updated = false;
-    ['17:00-19:00', '18:00-20:00'].forEach(t => {
-      if (!turnos.includes(t)) {
-        turnos.push(t);
-        updated = true;
-      }
-    });
+    if (turnos.includes('17:00-19:00')) {
+      turnos = turnos.filter(t => t !== '17:00-19:00');
+      updated = true;
+    }
+    if (!turnos.includes('18:00-20:00')) {
+      turnos.push('18:00-20:00');
+      updated = true;
+    }
     if (updated) {
       save('turnos', turnos);
     }
