@@ -1337,7 +1337,13 @@ function seedData(toSupabase = false){
     }
   });
 
-  if(!load('turnos')) saveFn('turnos',['08:00-10:00','10:00-12:00','14:00-16:00','16:00-18:00']);
+  let turnos = load('turnos');
+  if (!turnos || !turnos.length) {
+    saveFn('turnos', ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '17:00-19:00']);
+  } else if (!turnos.includes('17:00-19:00')) {
+    turnos.push('17:00-19:00');
+    saveFn('turnos', turnos);
+  }
   if(!load('config')) saveFn('config',{ minHours:2 });
 }
 
