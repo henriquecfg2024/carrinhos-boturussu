@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenda-carrinho-v14';
+const CACHE_NAME = 'agenda-carrinho-v15';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
