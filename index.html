@@ -2324,7 +2324,9 @@ function renderAdminUsers(){
       }
       // Somente Master pode fazer o restante
       if(currentUser.perfil==='master'){
-        if(u.status==='ativo') actions+=`<button class="btn btn-danger btn-xs" onclick="deactivateUser('${u.id}')">Desativar</button>`;
+        actions+=`<button class="btn btn-primary btn-xs" onclick="editUser('${u.id}')">✏️ Editar</button>`;
+        actions+=`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">🗑️ Excluir</button>`;
+        if(u.status==='ativo') actions+=`<button class="btn btn-warning btn-xs" onclick="deactivateUser('${u.id}')">Desativar</button>`;
         if(u.status==='inativo') actions+=`<button class="btn btn-primary btn-xs" onclick="activateUser('${u.id}')">Ativar</button>`;
         actions+=`<button class="btn btn-ghost btn-xs" onclick="resetPassword('${u.id}')">🔑</button>`;
         if(u.perfil==='publicador') actions+=`<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','administrador')" title="Promover a Admin">→🔐</button>`;
@@ -2376,6 +2378,62 @@ function activateUser(id){
   addLog(currentUser.id,currentUser.nome,'USUARIO_APROVADO',`Usuário reativado: ${users[idx].nome}`);
   toast(`${users[idx].nome} reativado!`,'success');
   if(adminTab==='users') renderAdminUsers();
+}
+
+async function editUser(id){
+  const users=load('users')||[];
+  const idx=users.findIndex(u=>u.id===id);
+  if(idx<0) return;
+  const u = users[idx];
+  const res = await modal({
+    title: 'Editar Usuário',
+    desc: 'Altere os dados do usuário abaixo:',
+    html: `
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-control" id="edit-user-name" value="${u.nome}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefone</label>
+        <input class="form-control" id="edit-user-phone" value="${u.telefone}" />
+      </div>
+    `,
+    actions: [
+      {label: 'Cancelar', class: 'btn-ghost', value: false},
+      {label: 'Salvar', class: 'btn-primary', value: true}
+    ]
+  });
+  if(res){
+    const newName = document.getElementById('edit-user-name').value.trim();
+    const newPhone = document.getElementById('edit-user-phone').value.trim();
+    if(newName && newPhone){
+      users[idx].nome = newName;
+      users[idx].telefone = newPhone;
+      save('users', users);
+      toast('Usuário atualizado com sucesso!', 'success');
+      if(adminTab==='users') renderAdminUsers();
+    }
+  }
+}
+
+async function deleteUser(id){
+  const users=load('users')||[];
+  const u = users.find(u=>u.id===id);
+  if(!u) return;
+  const res = await modal({
+    title: 'Excluir Usuário',
+    desc: `Tem certeza que deseja excluir permanentemente o cadastro de <b>${u.nome}</b>? Esta ação não pode ser desfeita.`,
+    actions: [
+      {label: 'Cancelar', class: 'btn-ghost', value: false},
+      {label: 'Excluir', class: 'btn-danger', value: true}
+    ]
+  });
+  if(res){
+    const newUsers = users.filter(usr=>usr.id!==id);
+    save('users', newUsers);
+    toast('Usuário excluído com sucesso.', 'info');
+    if(adminTab==='users') renderAdminUsers();
+  }
 }
 async function resetPassword(id){
   const users=load('users')||[];
