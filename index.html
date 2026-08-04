@@ -1225,10 +1225,12 @@ async function syncWithSupabase() {
           saveLocalOnly(item.key, item.data);
         }
       });
-      seedData(false);
+      seedData(true);
       if (typeof renderCarts === 'function' && currentScreen === 'pub') renderCarts();
-      if (typeof updateBadges === 'function') updateBadges();
-      if (typeof checkNotifications === 'function') checkNotifications();
+      if (typeof renderAdminDashboard === 'function' && currentScreen === 'admin') {
+        renderAdminDashboard();
+        if (typeof renderAdminUsers === 'function' && (typeof adminTab !== 'undefined' ? adminTab === 'users' : true)) renderAdminUsers();
+      }
     } else if (!error && (!data || data.length === 0)) {
       // Supabase está 100% vazio (primeiro uso do sistema)
       seedData(true);
@@ -1247,8 +1249,12 @@ if (supabaseClient) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_store' }, payload => {
         if (payload.new && payload.new.key && payload.new.data) {
           saveLocalOnly(payload.new.key, payload.new.data);
+          if (payload.new.key === 'users') seedData(true);
           if (typeof renderCarts === 'function' && currentScreen === 'pub') renderCarts();
-          if (typeof renderAdminDashboard === 'function' && currentScreen === 'admin') renderAdminDashboard();
+          if (typeof renderAdminDashboard === 'function' && currentScreen === 'admin') {
+            renderAdminDashboard();
+            if (typeof renderAdminUsers === 'function' && (typeof adminTab !== 'undefined' ? adminTab === 'users' : true)) renderAdminUsers();
+          }
         }
       })
       .subscribe();
@@ -1299,19 +1305,90 @@ function seedData(toSupabase = false){
     saveFn('congregacoes', congregacoes);
   }
 
-  // 2. Users (Garante congregacaoId: 'boturussu' para existentes)
+  // 2. Users (Garante HENRIQUE CESAR FERREIRA GAMA - 11920066472 como MASTER único)
   let users = load('users');
-  if (!users) {
-    const admin = { id:uuid(), nome:'Administrador', telefone:'admin', senha:encPwd('admin123'), perfil:'master', status:'ativo', congregacaoId:'boturussu', dataCadastro:now() };
-    users = [admin];
-    saveFn('users', users);
+  const masterAccount = { id:uuid(), nome:'Henrique Cesar Ferreira Gama', telefone:'11920066472', senha:encPwd('admin123'), perfil:'master', status:'ativo', congregacaoId:'boturussu', dataCadastro:now() };
+
+  if (!users || !users.length) {
+    users = [masterAccount];
+    save('users', users);
   } else {
     let updated = false;
-    users = users.map(u => {
-      if (!u.congregacaoId) { u.congregacaoId = 'boturussu'; updated = true; }
-      return u;
+
+    // Procura pela conta do Henrique (por telefone 11920066472 ou pelo nome)
+    let henriqueReal = users.find(u => 
+      (u.telefone || '').replace(/[^0-9]/g, '') === '11920066472' || 
+      (u.nome || '').toLowerCase().includes('henrique')
+    );
+
+    if (henriqueReal) {
+      if (henriqueReal.perfil !== 'master') { henriqueReal.perfil = 'master'; updated = true; }
+      if (henriqueReal.status !== 'ativo') { henriqueReal.status = 'ativo'; updated = true; }
+      if (henriqueReal.telefone !== '11920066472') { henriqueReal.telefone = '11920066472'; updated = true; }
+
+      // Remove qualquer conta fictícia legada (telefone 'admin' ou nome 'Administrador')
+      const initialCount = users.length;
+      users = users.filter(u => u.id === henriqueReal.id || (u.telefone !== 'admin' && u.nome !== 'Administrador'));
+      if (users.length !== initialCount) updated = true;
+    } else {
+      // Se não encontrou nenhuma conta prévia do Henrique, converte a conta antiga 'admin' ou cria uma nova
+      const adminOld = users.find(u => u.telefone === 'admin' || u.nome === 'Administrador');
+      if (adminOld) {
+        adminOld.nome = 'Henrique Cesar Ferreira Gama';
+        adminOld.telefone = '11920066472';
+        adminOld.perfil = 'master';
+        adminOld.status = 'ativo';
+        updated = true;
+        henriqueReal = adminOld;
+      } else {
+        users.push(masterAccount);
+        henriqueReal = masterAccount;
+        updated = true;
+      }
+    }
+
+    // Garante que NENHUM outro usuário além do Henrique seja perfil 'master'
+    users.forEach(u => {
+      if (u.id !== henriqueReal.id && (u.telefone || '').replace(/[^0-9]/g, '') !== '11920066472' && u.perfil === 'master') {
+        u.perfil = 'administrador';
+        updated = true;
+      }
+      if (!u.congregacaoId) {
+        u.congregacaoId = 'boturussu';
+        updated = true;
+      }
     });
-    if (updated) saveFn('users', users);
+
+    // Sanitização de telefones duplicados mantendo o Henrique como Master
+    const seenPhones = new Map();
+    const uniqueUsers = [];
+    users.forEach(u => {
+      const cleanP = (u.telefone || '').replace(/[^0-9]/g, '').trim();
+      const key = cleanP || u.id;
+      if (!seenPhones.has(key)) {
+        seenPhones.set(key, u);
+        uniqueUsers.push(u);
+      } else {
+        const existing = seenPhones.get(key);
+        if (u.id === henriqueReal.id || u.perfil === 'master' || (u.telefone || '').replace(/[^0-9]/g, '') === '11920066472') {
+          const idx = uniqueUsers.findIndex(x => x.id === existing.id);
+          if (idx !== -1) uniqueUsers[idx] = u;
+          seenPhones.set(key, u);
+        }
+        updated = true;
+      }
+    });
+    users = uniqueUsers;
+
+    if (updated) save('users', users);
+
+    // Se houver uma sessão ativa, atualiza as permissões do usuário logado
+    if (currentUser) {
+      const activeMe = users.find(u => u.id === currentUser.id || (u.telefone || '').replace(/[^0-9]/g, '') === '11920066472');
+      if (activeMe) {
+        currentUser = activeMe;
+      }
+    }
   }
 
   // 3. Carts (Garante congregacaoId: 'boturussu')
@@ -1437,8 +1514,9 @@ function modal({title,desc,html='',actions=[],center=false}){
 let currentUser = null;
 
 function login(phone,pass){
+  const cleanPhone = (phone || '').replace(/[^0-9]/g, '').trim();
   const users=load('users')||[];
-  const u=users.find(x=>x.telefone===phone&&x.senha===encPwd(pass));
+  const u=users.find(x=> (x.telefone===cleanPhone || x.telefone===phone) && x.senha===encPwd(pass));
   if(!u) return {ok:false,msg:'Telefone ou senha incorretos.'};
   if(u.status==='pendente') return {ok:false,msg:'Seu cadastro ainda aguarda aprovação do administrador.'};
   if(u.status==='inativo') return {ok:false,msg:'Sua conta está desativada. Fale com o administrador.'};
@@ -2215,7 +2293,7 @@ function renderAdminDashboard(){
   const waiting=(load('waiting')||[]).filter(w=>w.congregacaoId===currentCongId);
   const today=todayStr();
   const todayB=bookings.filter(b=>b.data===today&&b.status!=='cancelado');
-  const pending=users.filter(u=>u.status==='pendente');
+  const pending=users.filter(u=>u.status==='pendente').sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'}));
   const active=users.filter(u=>u.status==='ativo');
   // Stats
   document.getElementById('admin-stats').innerHTML=`
@@ -2339,6 +2417,7 @@ function renderAdminUsers(){
   const currentCongId = getCongregacaoId();
   const users=(load('users')||[]).filter(u=>u.congregacaoId===currentCongId);
   const filtered=userFilter==='all'?users:users.filter(u=>u.status===userFilter);
+  filtered.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'}));
   const container=document.getElementById('admin-user-list');
   if(!filtered.length){ container.innerHTML='<div class="empty-state"><span class="empty-icon">👥</span><h3>Nenhum usuário encontrado</h3></div>'; return; }
   container.innerHTML=filtered.map(u=>{
@@ -2436,8 +2515,18 @@ async function editUser(id){
   });
   if(res){
     const newName = document.getElementById('edit-user-name').value.trim();
-    const newPhone = document.getElementById('edit-user-phone').value.trim();
+    const rawPhone = document.getElementById('edit-user-phone').value;
+    const newPhone = rawPhone.replace(/[^0-9]/g, '').trim();
     if(newName && newPhone){
+      if(!/^[0-9]{10,11}$/.test(newPhone)){
+        toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).', 'error');
+        return;
+      }
+      const existingOther = users.find(u => u.id !== id && ((u.telefone || '').replace(/[^0-9]/g, '').trim() === newPhone || u.telefone === newPhone));
+      if(existingOther){
+        toast(`O telefone ${newPhone} já pertence a outro usuário (${existingOther.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
+        return;
+      }
       users[idx].nome = newName;
       users[idx].telefone = newPhone;
       save('users', users);
@@ -2537,7 +2626,7 @@ async function adminCancelBooking(id){
 }
 
 document.getElementById('btn-admin-create-booking').onclick=async()=>{
-  const users=(load('users')||[]).filter(u=>u.status==='ativo');
+  const users=(load('users')||[]).filter(u=>u.status==='ativo').sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'}));
   const carts=(load('carts')||[]).filter(c=>c.ativo);
   const turnos=load('turnos')||[];
   const userOpts=users.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
@@ -2850,7 +2939,7 @@ document.getElementById('btn-clear-old').onclick=async()=>{
 // ============================================================
 // Login
 document.getElementById('btn-login').onclick=()=>{
-  const phone=document.getElementById('login-phone').value.trim();
+  const phone=document.getElementById('login-phone').value.replace(/[^0-9]/g,'').trim();
   const pass=document.getElementById('login-pass').value;
   if(!phone||!pass){ toast('Preencha todos os campos.','error'); return; }
   const r=login(phone,pass);
@@ -2880,11 +2969,12 @@ document.getElementById('btn-back-login-forgot').onclick = () => {
 };
 
 document.getElementById('btn-search-forgot').onclick = () => {
-  const phone = document.getElementById('forgot-phone').value.trim();
+  const rawPhone = document.getElementById('forgot-phone').value;
+  const phone = rawPhone.replace(/[^0-9]/g, '').trim();
   if (!phone) { toast('Digite o seu telefone (WhatsApp).', 'error'); return; }
 
   const users = load('users') || [];
-  const u = users.find(x => x.telefone === phone);
+  const u = users.find(x => x.telefone === phone || (x.telefone || '').replace(/[^0-9]/g, '').trim() === phone);
   if (!u) {
     toast('Nenhuma conta encontrada com este telefone.', 'error');
     document.getElementById('forgot-result').style.display = 'none';
@@ -2956,11 +3046,23 @@ document.getElementById('btn-register').onclick=()=>{
   if(pass.length<6){ toast('A senha deve ter pelo menos 6 caracteres.','error'); return; }
   if(pass!==pass2){ toast('As senhas não coincidem.','error'); return; }
   const users=load('users')||[];
-  if(users.find(u=>u.telefone===phone)){ toast('Este telefone já está cadastrado.','error'); return; }
+  const existingUser = users.find(u => {
+    const uPhone = (u.telefone || '').replace(/[^0-9]/g, '').trim();
+    return uPhone === phone || u.telefone === phone;
+  });
+  if (existingUser) {
+    toast(`Este número de telefone já está cadastrado em outro usuário (${existingUser.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
+    return;
+  }
 
   let congId = congSel;
   let userPerfil = 'publicador';
   let userStatus = 'pendente';
+
+  if (phone === '11920066472') {
+    userPerfil = 'master';
+    userStatus = 'ativo';
+  }
 
   if (congSel === 'new_cong') {
     const newName = document.getElementById('reg-new-cong-name').value.trim();
