@@ -1454,8 +1454,13 @@ function logout(){
 // ============================================================
 // SCREEN MANAGER
 // ============================================================
-let currentScreen = 'login';
 function showScreen(name){
+  if(name==='admin'){
+    if(!currentUser || !['master','administrador'].includes((currentUser.perfil||'').toLowerCase())){
+      toast('Acesso negado. Você não tem permissão para acessar o painel administrador.','error');
+      name='pub';
+    }
+  }
   currentScreen = name;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(name==='login') document.getElementById('screen-login').classList.add('active');
@@ -1476,6 +1481,13 @@ function initPubScreen(){
   document.getElementById('profile-name').textContent=currentUser.nome;
   document.getElementById('profile-phone').textContent=currentUser.telefone;
   document.getElementById('profile-badge').textContent=ROLE_LABEL[currentUser.perfil]||currentUser.perfil;
+  
+  const backBtn = document.getElementById('btn-pub-to-admin');
+  if (backBtn) {
+    const isNavAdmin = currentUser && ['master','administrador'].includes((currentUser.perfil || '').toLowerCase());
+    backBtn.style.display = isNavAdmin ? 'flex' : 'none';
+  }
+
   renderCalendar();
   renderCarts();
   updateBadges();
@@ -2147,6 +2159,11 @@ const ROLE_LABEL={'master':'👑 Master','administrador':'🔐 Admin','publicado
 const ROLE_BADGE={'master':'badge-blue','administrador':'badge-green','publicador':'badge-gray'};
 
 function initAdminScreen(){
+  if(!currentUser || !['master','administrador'].includes((currentUser.perfil||'').toLowerCase())){
+    toast('Acesso negado.','error');
+    showScreen('pub');
+    return;
+  }
   const allowed=ROLE_TABS[currentUser.perfil]||[];
   // Show/hide tabs
   const tabButtons=document.querySelectorAll('#admin-tabs .tab');
@@ -2169,7 +2186,11 @@ function initAdminScreen(){
 
 function switchAdminTab(tab,el){
   const allowed=ROLE_TABS[currentUser.perfil]||[];
-  if(!allowed.includes(tab)){ toast('Sem permissão para acessar esta área.','error'); return; }
+  if(!allowed.includes(tab)){
+    toast('Sem permissão para acessar esta área.','error');
+    showScreen('pub');
+    return;
+  }
   adminTab=tab;
   document.querySelectorAll('#admin-tabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
