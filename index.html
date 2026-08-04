@@ -662,7 +662,7 @@ small{font-size:.8rem}
     <div id="login-form">
       <div class="form-group">
         <label class="form-label" for="login-phone">📱 Telefone (WhatsApp)</label>
-        <input class="form-control" id="login-phone" type="tel" placeholder="(00) 00000-0000" inputmode="tel"/>
+        <input class="form-control" id="login-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" for="login-pass">🔑 Senha</label>
@@ -681,7 +681,7 @@ small{font-size:.8rem}
       <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:16px">Digite o seu telefone (WhatsApp) cadastrado para localizar sua conta e enviar uma solicitação de redefinição de senha ao administrador da sua congregação.</p>
       <div class="form-group">
         <label class="form-label">📱 Telefone (WhatsApp)</label>
-        <input class="form-control" id="forgot-phone" type="tel" placeholder="(00) 00000-0000" inputmode="tel"/>
+        <input class="form-control" id="forgot-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
       </div>
       <div id="forgot-result" style="display:none;background:var(--blue-pale);padding:14px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:.85rem;color:var(--navy)">
         <div style="font-weight:700;margin-bottom:4px" id="forgot-user-name"></div>
@@ -718,7 +718,7 @@ small{font-size:.8rem}
       </div>
       <div class="form-group">
         <label class="form-label">📱 Telefone (WhatsApp)</label>
-        <input class="form-control" id="reg-phone" type="tel" placeholder="(00) 00000-0000" inputmode="tel"/>
+        <input class="form-control" id="reg-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
       </div>
       <div class="form-group">
         <label class="form-label">🔑 Senha</label>
@@ -2915,12 +2915,13 @@ document.getElementById('btn-goto-register').onclick=()=>{
 document.getElementById('btn-back-login').onclick=()=>{ document.getElementById('register-form').style.display='none'; document.getElementById('login-form').style.display='block'; };
 document.getElementById('btn-register').onclick=()=>{
   const nome=document.getElementById('reg-name').value.trim();
-  const phone=document.getElementById('reg-phone').value.trim();
+  const phone=document.getElementById('reg-phone').value.replace(/[^0-9]/g,'').trim();
   const pass=document.getElementById('reg-pass').value;
   const pass2=document.getElementById('reg-pass2').value;
   const congSel=document.getElementById('reg-congregacao').value;
 
   if(!nome||!phone||!pass||!pass2){ toast('Preencha todos os campos.','error'); return; }
+  if(!/^[0-9]{10,11}$/.test(phone)){ toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).','error'); return; }
   if(pass.length<6){ toast('A senha deve ter pelo menos 6 caracteres.','error'); return; }
   if(pass!==pass2){ toast('As senhas não coincidem.','error'); return; }
   const users=load('users')||[];
