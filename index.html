@@ -97,7 +97,7 @@ body{
   background:var(--gray-100);
   color:var(--gray-800);
   min-height:100vh;
-  font-size:15px;
+  font-size:17px;
   line-height:1.6;
   -webkit-font-smoothing:antialiased;
 }
@@ -181,8 +181,9 @@ small{font-size:.8rem}
 /* ===== BUTTONS ===== */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;
-  gap:6px;padding:10px 18px;border-radius:var(--radius-sm);
-  font-size:.875rem;font-weight:600;font-family:'Inter',sans-serif;
+  gap:6px;padding:12px 20px;border-radius:var(--radius-sm);
+  font-size:1.05rem;font-weight:600;font-family:'Inter',sans-serif;
+  min-height:52px;
   border:none;cursor:pointer;transition:var(--transition);
   text-decoration:none;user-select:none;
 }
@@ -793,6 +794,8 @@ small{font-size:.8rem}
         <div class="cal-grid" id="cal-days-header"></div>
         <div class="cal-grid" id="cal-days"></div>
       </div>
+      <!-- Botão Grande de Ajuda Fixo (Acessibilidade 70+) -->
+      <button class="btn btn-outline btn-full" id="btn-help-faq" style="min-height:52px;margin:12px 0 16px;font-size:1.05rem;font-weight:700;border-width:2px;box-shadow:var(--shadow-sm)" onclick="showHelpFAQModal()">❓ Onde pego o carrinho? Ajuda e Responsáveis</button>
       <!-- Filter Chips & Selected date label -->
       <div class="filter-row" style="margin-bottom:10px">
         <button class="chip active" onclick="filterCartsNeeded(false,this)">Todos os Turnos</button>
@@ -1061,12 +1064,77 @@ small{font-size:.8rem}
     <button class="tab active" data-tab="dashboard" onclick="switchAdminTab('dashboard',this)" style="border-right:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100)">🏠 Dashboard</button>
     <button class="tab" data-tab="users" onclick="switchAdminTab('users',this)" style="border-right:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100)">👥 Usuários</button>
     <button class="tab" data-tab="schedule" onclick="switchAdminTab('schedule',this)" style="border-bottom:1px solid var(--gray-100)">📅 Agenda</button>
+    <button class="tab" data-tab="imprevisto" onclick="switchAdminTab('imprevisto',this)" style="border-right:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100);background:#fee2e2;color:#dc2626;font-weight:700">🚨 Imprevisto</button>
+    <button class="tab" data-tab="support_points" onclick="switchAdminTab('support_points',this)" style="border-right:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100)">🏠 Pontos Apoio</button>
+    <button class="tab" data-tab="locations" onclick="switchAdminTab('locations',this)" style="border-bottom:1px solid var(--gray-100)">📍 Locais</button>
+    <button class="tab" data-tab="equipments" onclick="switchAdminTab('equipments',this)" style="border-right:1px solid var(--gray-100)">🛒 Equip/Resp</button>
     <button class="tab" data-tab="logs" onclick="switchAdminTab('logs',this)" style="border-right:1px solid var(--gray-100)">📋 Logs</button>
     <button class="tab" data-tab="reports" onclick="switchAdminTab('reports',this)" style="border-right:1px solid var(--gray-100)">📊 Relatórios</button>
     <button class="tab" data-tab="config" onclick="switchAdminTab('config',this)">⚙️ Config</button>
   </div>
   <!-- CONTENT -->
   <div class="content scroll-top" style="padding-bottom:24px">
+    <!-- Modo Imprevisto -->
+    <div id="admin-imprevisto" style="display:none">
+      <div class="card" style="border:2px solid var(--red);margin-bottom:16px">
+        <div class="card-header" style="background:var(--red-light);color:var(--red)">
+          <span style="font-size:1.4rem">🚨</span>
+          <h3>MODO IMPREVISTO — Ponto de Apoio Fechado</h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:.9rem;color:var(--gray-600);margin-bottom:14px">Use este painel emergencial quando uma irmã ou ponto de apoio precisar fechar inesperadamente (ex: consulta médica).</p>
+          <div class="form-group">
+            <label class="form-label">🏠 Qual Ponto de Apoio Fechou?</label>
+            <select class="form-control" id="imp-closed-point" onchange="onImprevistoPointSelect(this.value)"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">⏰ Fechado Até Quando?</label>
+            <input type="datetime-local" class="form-control" id="imp-until-dt"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">📝 Motivo do Fechamento</label>
+            <input type="text" class="form-control" id="imp-reason" placeholder="Ex: Consulta médica / Imprevisto familiar"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔄 Usar Qual Ponto Substituto (Fallback)?</label>
+            <select class="form-control" id="imp-fallback-point"></select>
+          </div>
+          <button class="btn btn-danger btn-full" style="min-height:54px;font-size:1.1rem;margin-top:10px" onclick="saveImprevisto()">🚨 SALVAR E NAVEGAR RECURSIVO</button>
+        </div>
+      </div>
+      <div class="section-title">📅 Agendamentos Afetados pelo Imprevisto</div>
+      <div id="imp-affected-list"></div>
+      <button class="btn btn-warning btn-full" style="margin-top:12px" onclick="sendImprevistoWhatsAppAlerts()">📱 Notificar Irmãos Afetados no WhatsApp</button>
+    </div>
+
+    <!-- Pontos de Apoio -->
+    <div id="admin-support_points" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="color:var(--navy)">🏠 Pontos de Apoio (100% Editáveis)</h3>
+        <button class="btn btn-primary btn-sm" onclick="openSupportPointModal()">➕ Criar Novo Ponto</button>
+      </div>
+      <div id="admin-support-points-list"></div>
+    </div>
+
+    <!-- Locais de Serviço -->
+    <div id="admin-locations" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="color:var(--navy)">📍 Locais de Serviço</h3>
+        <button class="btn btn-primary btn-sm" onclick="openLocationModal()">➕ Novo Local</button>
+      </div>
+      <div id="admin-locations-list"></div>
+    </div>
+
+    <!-- Equipamentos & Responsáveis -->
+    <div id="admin-equipments" style="display:none">
+      <div class="section-title">🛒 Equipamentos (Carrinhos & Displays)</div>
+      <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="openEquipmentModal()">➕ Novo Equipamento</button>
+      <div id="admin-equipments-list" style="margin-bottom:24px"></div>
+
+      <div class="section-title">👤 Responsabilidades & FAQ Dinâmico</div>
+      <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="openResponsibilityModal()">➕ Nova Responsabilidade</button>
+      <div id="admin-responsibilities-list"></div>
+    </div>
     <!-- Dashboard -->
     <div id="admin-dashboard">
       <div class="stats-row" id="admin-stats"></div>
@@ -1394,6 +1462,49 @@ function seedData(toSupabase = false){
     }
   }
   if(!load('config')) saveFn('config',{ minHours:2 });
+
+  // 5. Initial Seed for Support Points, Service Locations, Equipments & Responsibilities
+  let supportPoints = load('support_points');
+  if (!supportPoints || !supportPoints.length) {
+    supportPoints = [
+      { id: 'sp-isabe', name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', photoUrl: '', whatsapp: '11999990001', mapsUrl: 'https://maps.google.com/?q=Casa+da+Isabe', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-dielly' },
+      { id: 'sp-renata', name: 'Casa da Irmã Renata', responsibleName: 'Renata', address: 'Av. Principal, 456', photoUrl: '', whatsapp: '11999990002', mapsUrl: 'https://maps.google.com/?q=Casa+da+Renata', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' },
+      { id: 'sp-dielly', name: 'Casa da Irmã Dielly', responsibleName: 'Dielly', address: 'Rua das Palmeiras, 78', photoUrl: '', whatsapp: '11999990003', mapsUrl: 'https://maps.google.com/?q=Casa+da+Dielly', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-laura' },
+      { id: 'sp-laura', name: 'Casa da Irmã Laura', responsibleName: 'Laura', address: 'Rua dos Sabiás, 90', photoUrl: '', whatsapp: '11999990004', mapsUrl: 'https://maps.google.com/?q=Casa+da+Laura', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' }
+    ];
+    saveFn('support_points', supportPoints);
+  }
+
+  let equipments = load('equipments');
+  if (!equipments || !equipments.length) {
+    equipments = [
+      { id: 'eq-cg1', name: 'Carrinho Grande #1', type: 'carrinho_grande', currentSupportPointId: 'sp-isabe', photoUrl: '', status: 'disponível', isActive: true },
+      { id: 'eq-dp1', name: 'Display Portátil Dielly', type: 'display_portatil', currentSupportPointId: 'sp-dielly', photoUrl: '', status: 'disponível', isActive: true }
+    ];
+    saveFn('equipments', equipments);
+  }
+
+  let serviceLocations = load('service_locations');
+  if (!serviceLocations || !serviceLocations.length) {
+    serviceLocations = [
+      { id: 'c1', name: 'Padaria União', type: 'Ponto de Táxi', mapsUrl: 'https://www.google.com/maps/search/Padaria+União', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-cg1', isActive: true },
+      { id: 'c2', name: 'CAPS', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/CAPS', photoUrl: '', defaultSupportPointId: 'sp-renata', defaultEquipmentId: 'eq-cg1', isActive: true },
+      { id: 'c3', name: 'Padaria Lucidina', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', photoUrl: '', defaultSupportPointId: 'sp-dielly', defaultEquipmentId: 'eq-dp1', isActive: true }
+    ];
+    saveFn('service_locations', serviceLocations);
+  }
+
+  let responsibilities = load('responsibilities');
+  if (!responsibilities || !responsibilities.length) {
+    responsibilities = [
+      { id: 'r1', roleKey: 'admin_app', personName: 'Irmão Administrador', whatsapp: '11999999999', photoUrl: '', help_text: 'Dúvidas gerais do aplicativo ou acesso ao sistema.', displayOrder: 1 },
+      { id: 'r2', roleKey: 'manutencao', personName: 'Irmão Manutenção', whatsapp: '11988888888', photoUrl: '', help_text: 'Ajuste e manutenção de rodas, freios ou estrutura dos carrinhos.', displayOrder: 2 },
+      { id: 'r3', roleKey: 'abastecimento', personName: 'Irmão Abastecimento', whatsapp: '11977777777', photoUrl: '', help_text: 'Reposição de revistas, brochuras, Bíblias e folhetos.', displayOrder: 3 },
+      { id: 'r4', roleKey: 'troca_cartaz', personName: 'Irmão Troca de Cartaz', whatsapp: '11966666666', photoUrl: '', help_text: 'Atualização e conservação dos cartazes dos carrinhos.', displayOrder: 4 },
+      { id: 'r5', roleKey: 'ponto_apoio', personName: 'Irmãs Responsáveis pelos Pontos', whatsapp: '11999990001', photoUrl: '', help_text: 'Para confirmar chaves ou horários de retirada e devolução do material nas residências.', displayOrder: 5 }
+    ];
+    saveFn('responsibilities', responsibilities);
+  }
 }
 
 // ============================================================
@@ -1679,9 +1790,58 @@ function selectDate(ds){
 document.getElementById('cal-prev').onclick=()=>{ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); };
 document.getElementById('cal-next').onclick=()=>{ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); };
 
+// --- HELPER FUNCTION: GET EFFECTIVE SUPPORT POINT (CLIENT SIDE) ---
+function getEffectiveSupportPoint(serviceLocId, datetimeStr = now()) {
+  const serviceLocs = load('service_locations') || [];
+  const supportPoints = load('support_points') || [];
+  const loc = serviceLocs.find(l => l.id === serviceLocId) || serviceLocs.find(l => l.name === serviceLocId);
+
+  let defaultPointId = loc ? loc.defaultSupportPointId : null;
+  if (!defaultPointId && supportPoints.length) defaultPointId = supportPoints[0].id;
+
+  if (!defaultPointId) return { point: null, isFallback: false, reason: '' };
+
+  let currPoint = supportPoints.find(p => p.id === defaultPointId);
+  const defaultPointObj = currPoint;
+  let depth = 0;
+  const targetDt = new Date(datetimeStr);
+
+  while (currPoint && depth < 3) {
+    const isClosed = currPoint.unavailableUntil && new Date(currPoint.unavailableUntil) > targetDt;
+    if (isClosed) {
+      if (currPoint.fallbackPointId && currPoint.fallbackPointId !== currPoint.id) {
+        const nextPoint = supportPoints.find(p => p.id === currPoint.fallbackPointId);
+        if (nextPoint) {
+          currPoint = nextPoint;
+          depth++;
+          continue;
+        }
+      }
+      break;
+    } else {
+      return {
+        point: currPoint,
+        defaultPoint: defaultPointObj,
+        isFallback: currPoint.id !== defaultPointId,
+        reason: defaultPointObj ? defaultPointObj.unavailableReason : ''
+      };
+    }
+  }
+
+  return {
+    point: currPoint || defaultPointObj,
+    defaultPoint: defaultPointObj,
+    isFallback: (currPoint || defaultPointObj).id !== defaultPointId,
+    reason: defaultPointObj ? defaultPointObj.unavailableReason : ''
+  };
+}
+
 // --- CARTS ---
 function renderCarts(){
   const carts=load('carts')||[];
+  const serviceLocs=load('service_locations')||[];
+  const supportPoints=load('support_points')||[];
+  const equipments=load('equipments')||[];
   const turnos=load('turnos')||[];
   const bookings=load('bookings')||[];
   const waiting=load('waiting')||[];
@@ -1697,9 +1857,32 @@ function renderCarts(){
   carts.filter(c=>c.ativo).forEach(cart=>{
     const div=document.createElement('div');
     div.className='cart-card';
-    // slots HTML
+    div.style.marginBottom='20px';
+
+    // Resolve Local de Serviço, Equipamento e Ponto de Apoio Efetivo
+    const loc = serviceLocs.find(l => l.name === cart.local || l.id === cart.id) || { name: cart.local, mapsUrl: cart.googleMapsUrl, type: cart.descricao };
+    const effectiveRes = getEffectiveSupportPoint(loc.id, selectedDate + 'T08:00:00');
+    const effPoint = effectiveRes.point || { name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', mapsUrl: '' };
+    const defPoint = effectiveRes.defaultPoint || effPoint;
+    const eq = equipments[0] || { name: 'Carrinho Grande' };
+
+    // Fallback Yellow Warning Banner
+    let fallbackWarningHtml = '';
+    if (effectiveRes.isFallback) {
+      fallbackWarningHtml = `
+        <div style="background:#fef3c7;border:2px solid #d97706;padding:14px 16px;border-radius:12px;margin:12px;color:#78350f;font-size:0.95rem;line-height:1.5">
+          <div style="font-weight:800;font-size:1.05rem;color:#b45309;margin-bottom:4px">⚠️ ATENÇÃO: Mudança no Ponto de Apoio!</div>
+          A ${defPoint.name} está indisponível hoje (${effectiveRes.reason || 'imprevisto'}).<br>
+          Seu serviço no <b>${cart.local}</b> está <b>MANTIDO!</b><br>
+          <div style="margin-top:8px;background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #f59e0b">
+            📍 <b>Retire em:</b> ${effPoint.name} (${effPoint.responsibleName}) — ${effPoint.address}<br>
+            ${effPoint.mapsUrl ? `<a href="${effPoint.mapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${effPoint.responsibleName}</a>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
     let slotsHtml='';
-    let visibleSlotsCount = 0;
     turnos.forEach(turno=>{
       const slotBookings=bookings.filter(b=>b.carrinhoId===cart.id&&b.data===selectedDate&&b.turno===turno&&b.status!=='cancelado');
       const mine=slotBookings.find(b=>b.usuarioId===currentUser.id);
@@ -1707,16 +1890,15 @@ function renderCarts(){
       const isFull=count>=cart.capMax;
       const needsPartner = count > 0 && count < cart.capMin;
       if (filterOnlyNeeded && !needsPartner) return;
-      visibleSlotsCount++;
+
       const inWaiting=waiting.find(w=>w.usuarioId===currentUser.id&&w.carrinhoId===cart.id&&w.data===selectedDate&&w.turno===turno);
       const names=slotBookings.map(b=>b.usuarioNome.split(' ')[0]).join(', ')||'Nenhum confirmado';
-      // Check if can book
-      const [hStart]=turno.split('-')[0].split(':').map(Number);
+
       const slotDateTime=new Date(selectedDate+'T'+turno.split('-')[0]+':00');
       const diffH=(slotDateTime-new Date())/3600000;
       const isPast=diffH<0;
       const tooSoon=diffH<(config.minHours||0)&&diffH>=0;
-      // Dots
+
       const dots=Array.from({length:cart.capMax},(_,i)=>{
         if(i<count){
           const b=slotBookings[i];
@@ -1724,59 +1906,78 @@ function renderCarts(){
         }
         return '<div class="dot"></div>';
       }).join('');
-      // Warning
-      const warn=count<cart.capMin&&!isPast?`<div class="warning-banner">⚠️ Precisa de mais ${cart.capMin-count} irmão${cart.capMin-count>1?'s':''}</div>`:'';
-      // Status badge & action
+
+      let statusMsg = count < cart.capMin && !isPast ? `Este horário precisa de mais ${cart.capMin - count} irmão${cart.capMin - count > 1 ? 's' : ''}. Quer convidar alguém?` : '';
+
       let badge='', action='';
       if(isPast){
-        badge=`<span class="badge badge-gray">Encerrado</span>`;
+        badge=`<span class="badge badge-gray" style="font-size:0.9rem">⏳ Horário já passou</span>`;
       } else if(mine){
         const canCheckin=diffH<0.5&&diffH>-2&&mine.status==='agendado';
         const canCheckout=mine.status==='presente';
-        badge=mine.status==='agendado'?`<span class="badge badge-blue">🔵 Agendado</span>`:
-              mine.status==='presente'?`<span class="badge badge-green">🟢 Presente</span>`:
-              `<span class="badge badge-gray">⚫ Finalizado</span>`;
-        if(canCheckin) action=`<button class="btn btn-success btn-xs" onclick="doCheckin('${mine.id}')">✅ Check-in</button>`;
-        else if(canCheckout) action=`<button class="btn btn-warning btn-xs" onclick="doCheckout('${mine.id}')">🏁 Check-out</button>`;
-        else if(mine.status==='agendado'&&!isPast) action=`<button class="btn btn-danger btn-xs" onclick="cancelBooking('${mine.id}')">✖ Cancelar</button>`;
+        badge=mine.status==='agendado'?`<span class="badge badge-blue" style="font-size:0.9rem">🔵 Agendado</span>`:
+              mine.status==='presente'?`<span class="badge badge-green" style="font-size:0.9rem">🟢 Presente</span>`:
+              `<span class="badge badge-gray" style="font-size:0.9rem">⚫ Finalizado</span>`;
+        if(canCheckin) action=`<button class="btn btn-success" style="min-height:52px" onclick="doCheckin('${mine.id}')">✅ Check-in</button>`;
+        else if(canCheckout) action=`<button class="btn btn-warning" style="min-height:52px" onclick="doCheckout('${mine.id}')">🏁 Check-out</button>`;
+        else if(mine.status==='agendado'&&!isPast) action=`<button class="btn btn-danger" style="min-height:52px" onclick="cancelBooking('${mine.id}')">✖ Cancelar</button>`;
       } else if(inWaiting){
         const pos=waiting.filter(w=>w.carrinhoId===cart.id&&w.data===selectedDate&&w.turno===turno).findIndex(w=>w.usuarioId===currentUser.id)+1;
-        badge=`<span class="badge badge-yellow">⏳ Fila #${pos}</span>`;
-        action=`<button class="btn btn-ghost btn-xs" onclick="leaveWaiting('${inWaiting.id}')">Sair da fila</button>`;
+        badge=`<span class="badge badge-yellow" style="font-size:0.9rem">⏳ Fila #${pos}</span>`;
+        action=`<button class="btn btn-ghost" style="min-height:52px" onclick="leaveWaiting('${inWaiting.id}')">Sair da fila</button>`;
       } else if(isFull){
-        badge=`<span class="badge badge-red">🔴 Lotado (${count}/${cart.capMax})</span>`;
-        action=`<button class="btn btn-warning btn-xs" onclick="joinWaiting('${cart.id}','${selectedDate}','${turno}')">⏳ Espera</button>`;
+        badge=`<span class="badge badge-red" style="font-size:0.9rem">🔴 Lotado (${count}/${cart.capMax})</span>`;
+        action=`<button class="btn btn-warning" style="min-height:52px" onclick="joinWaiting('${cart.id}','${selectedDate}','${turno}')">⏳ Entrar na Fila</button>`;
       } else {
-        badge=`<span class="badge badge-green">${count}/${cart.capMax} vagas</span>`;
-        if(tooSoon) action=`<button class="btn btn-ghost btn-xs" disabled title="Aguarde mais">⏱ Em breve</button>`;
-        else action=`<button class="btn btn-primary btn-xs" onclick="createBooking('${cart.id}','${selectedDate}','${turno}')">+ Agendar</button>`;
+        badge=`<span class="badge badge-green" style="font-size:0.9rem">${count}/${cart.capMax} vagas</span>`;
+        if(tooSoon) action=`<button class="btn btn-ghost" disabled style="min-height:52px">⏱ Em breve</button>`;
+        else action=`<button class="btn btn-primary" style="min-height:52px;font-size:1.1rem;font-weight:700" onclick="createBooking('${cart.id}','${selectedDate}','${turno}')">+ Agendar (52px)</button>`;
       }
+
       slotsHtml+=`
-        <div class="slot-list" style="padding:0 12px">
-          <div class="slot-item ${mine?'mine':''} ${isFull&&!mine?'full':''}">
-            <div class="slot-time">${turno.replace('-','<br>')}</div>
-            <div class="slot-info">
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${badge}</div>
-              <div class="people-dots" style="margin-top:5px">${dots}</div>
-              <div class="slot-names">${names}</div>
-            </div>
-            <div class="slot-action">${action}</div>
+        <div class="slot-item ${mine?'mine':''} ${isFull&&!mine?'full':''}" style="margin-bottom:12px;padding:14px;border-radius:12px;border:1px solid var(--gray-200);background:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">🕐 ${turno}</div>
+            <div>${badge}</div>
+          </div>
+          <div style="font-size:0.9rem;color:var(--gray-600);margin-bottom:6px">👥 Confirmados: <b>${names}</b></div>
+          <div class="people-dots" style="margin-bottom:8px">${dots}</div>
+          ${statusMsg ? `<div style="background:var(--yellow-light);color:var(--yellow);padding:6px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;margin-bottom:10px">⚠️ ${statusMsg}</div>` : ''}
+          <div style="margin-top:10px">${action}</div>
+        </div>`;
+    });
+
+    div.innerHTML=`
+      <div class="cart-header" style="background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:16px;border-radius:12px 12px 0 0">
+        <span style="font-size:1.8rem">📍</span>
+        <div style="flex:1">
+          <div style="font-size:1.15rem;font-weight:800">📍 ONDE VOU SERVIR: ${cart.local}</div>
+          <div style="font-size:0.85rem;opacity:0.9">${cart.nome} • ${cart.descricao}</div>
+        </div>
+      </div>
+      <div class="cart-body" style="padding:16px;background:#f8fafc">
+        <a class="btn btn-outline btn-full" href="${cart.googleMapsUrl}" target="_blank" rel="noopener" style="min-height:48px;margin-bottom:14px;font-size:0.95rem">🗺️ Ver no Google Maps do local de serviço</a>
+        
+        <div style="background:#fff;border:1px solid var(--gray-300);padding:14px;border-radius:12px;margin-bottom:14px">
+          <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin-bottom:4px">📦 ONDE RETIRAR E DEVOLVER:</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${effPoint.name} (Responsável: ${effPoint.responsibleName || 'Irmã'})</div>
+          <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${effPoint.address}</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            ${effPoint.mapsUrl ? `<a href="${effPoint.mapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
           </div>
         </div>
-        ${warn}`;
-    });
-    div.innerHTML=`
-      <div class="cart-header" role="button" tabindex="0" aria-expanded="true" aria-label="${cart.nome} - ${cart.local}. Pressione Enter para recolher ou expandir os turnos" onclick="toggleCart('ch-${cart.id}','ct-${cart.id}',this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCart('ch-${cart.id}','ct-${cart.id}',this);}">
-        <span style="font-size:1.3rem" aria-hidden="true">🛒</span>
-        <div style="flex:1">
-          <div class="cart-name">${cart.nome} — ${cart.local}</div>
-          <div class="cart-loc">${cart.descricao}</div>
+
+        <div style="background:#fff;border:1px solid var(--gray-300);padding:12px 14px;border-radius:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:1.5rem">🛒</span>
+          <div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--gray-500);text-transform:uppercase">🛒 O QUE VOU LEVAR:</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--navy)">${eq.name}</div>
+          </div>
         </div>
-        <span class="cart-toggle" aria-hidden="true">▾</span>
-      </div>
-      <div class="cart-body" id="ct-${cart.id}">
-        <a class="maps-link" href="${cart.googleMapsUrl}" target="_blank" rel="noopener" aria-label="Abrir localização de ${cart.local} no Google Maps">📍 Ver no Google Maps</a>
-        <div style="padding-bottom:12px">${slotsHtml}</div>
+
+        ${fallbackWarningHtml}
+
+        <div style="margin-top:14px">${slotsHtml}</div>
       </div>`;
     container.appendChild(div);
   });
@@ -1981,22 +2182,50 @@ function bookingCard(b,showActions){
   const canCheckout=b.status==='presente';
   let actions='';
   if(showActions){
-    if(canCheckin) actions+=`<button class="btn btn-success btn-sm" onclick="doCheckin('${b.id}');renderMySchedule()">✅ Check-in</button>`;
-    if(canCheckout) actions+=`<button class="btn btn-warning btn-sm" onclick="doCheckout('${b.id}');renderMySchedule()">🏁 Check-out</button>`;
-    if(b.status==='agendado') actions+=`<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">✖ Cancelar</button>`;
+    if(canCheckin) actions+=`<button class="btn btn-success btn-sm" style="min-height:48px" onclick="doCheckin('${b.id}');renderMySchedule()">✅ Check-in</button>`;
+    if(canCheckout) actions+=`<button class="btn btn-warning btn-sm" style="min-height:48px" onclick="doCheckout('${b.id}');renderMySchedule()">🏁 Check-out</button>`;
+    if(b.status==='agendado') actions+=`<button class="btn btn-danger btn-sm" style="min-height:48px" onclick="cancelBooking('${b.id}')">✖ Cancelar</button>`;
   }
-  return `<div class="checkin-card" style="margin-bottom:12px">
-    <div class="checkin-header">
-      <div class="avatar" style="background:linear-gradient(135deg,var(--navy),var(--blue))">🛒</div>
+
+  // Prepara WhatsApp da responsável e do Admin
+  const supportPoints = load('support_points') || [];
+  const responsibilities = load('responsibilities') || [];
+  const sp = supportPoints[0] || { whatsapp: '11999990001', name: 'Ponto de Apoio' };
+  const adminResp = responsibilities.find(r => r.roleKey === 'admin_app') || { whatsapp: '11999999999' };
+
+  const pubName = encodeURIComponent(currentUser ? currentUser.nome : 'Publicador');
+  const localName = encodeURIComponent(b.carrinhoNome || 'Local');
+  const dateStr = encodeURIComponent(fmtD(b.data));
+  const timeStr = encodeURIComponent(b.turno);
+
+  const waMsg1 = `https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}?text=Olá!%20Sou%20${pubName}%20e%20agendei%20${localName}%20dia%20${dateStr}%20às%20${timeStr}.%20Onde%20devo%20retirar?`;
+  const waMsg2 = `https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}?text=Olá!%20Cheguei%20para%20o%20turno%20no%20${localName}%20(${dateStr}%20às%20${timeStr})%20mas%20não%20tinha%20ninguém.`;
+  const waMsg3 = `https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}?text=Olá!%20O%20material%20do%20${localName}%20precisa%20de%20ajuda%20(revistas/manutenção/cartaz).`;
+  const waMsg4 = `https://wa.me/55${(adminResp.whatsapp||'').replace(/[^0-9]/g,'')}?text=Olá!%20Sou%20${pubName}%20e%20preciso%20falar%20com%20o%20Administrador.`;
+
+  const waButtonsHtml = showActions ? `
+    <div style="background:#f0f4f8;padding:12px;border-radius:10px;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:0.8rem;font-weight:700;color:var(--navy)">💬 DÚVIDAS E AJUDA RÁPIDA NO WHATSAPP:</div>
+      <a href="${waMsg1}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="min-height:44px;font-size:0.85rem;justify-content:flex-start">📦 1. Onde retiro este material?</a>
+      <a href="${waMsg2}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="min-height:44px;font-size:0.85rem;justify-content:flex-start">🚪 2. Cheguei e não tinha ninguém</a>
+      <a href="${waMsg3}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="min-height:44px;font-size:0.85rem;justify-content:flex-start">🔧 3. Material precisa de ajuda</a>
+      <a href="${waMsg4}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="min-height:44px;font-size:0.85rem;justify-content:flex-start">👤 4. Falar com Administrador</a>
+    </div>
+  ` : '';
+
+  return `<div class="checkin-card" style="margin-bottom:14px;padding:16px;border-radius:12px;background:#fff;box-shadow:var(--shadow-sm);border:1px solid var(--gray-200)">
+    <div class="checkin-header" style="display:flex;gap:12px;align-items:flex-start">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--navy),var(--blue));width:44px;height:44px;font-size:1.2rem">🛒</div>
       <div style="flex:1">
-        <div style="font-weight:600;font-size:.9rem">${b.carrinhoNome}</div>
-        <div style="font-size:.78rem;color:var(--gray-500)">📅 ${fmtD(b.data)} &nbsp; 🕐 ${b.turno}</div>
-        <div style="margin-top:5px">${statusBadge}</div>
-        ${b.checkInHora?`<div style="font-size:.72rem;color:var(--gray-400);margin-top:2px">Check-in: ${fmtDT(b.checkInHora)}</div>`:''}
-        ${b.checkOutHora?`<div style="font-size:.72rem;color:var(--gray-400)">Check-out: ${fmtDT(b.checkOutHora)}</div>`:''}
+        <div style="font-weight:700;font-size:1.05rem;color:var(--navy)">${b.carrinhoNome}</div>
+        <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📅 <b>${fmtD(b.data)}</b> &nbsp; 🕐 <b>${b.turno}</b></div>
+        <div style="margin-top:6px">${statusBadge}</div>
+        ${b.checkInHora?`<div style="font-size:.78rem;color:var(--gray-500);margin-top:4px">Check-in: ${fmtDT(b.checkInHora)}</div>`:''}
+        ${b.checkOutHora?`<div style="font-size:.78rem;color:var(--gray-500)">Check-out: ${fmtDT(b.checkOutHora)}</div>`:''}
       </div>
     </div>
-    ${actions?`<div class="checkin-actions" style="gap:8px;flex-wrap:wrap">${actions}</div>`:''}
+    ${actions?`<div class="checkin-actions" style="gap:8px;flex-wrap:wrap;margin-top:12px">${actions}</div>`:''}
+    ${waButtonsHtml}
   </div>`;
 }
 
@@ -2184,10 +2413,9 @@ let logFilter='';
 let userFilter='all';
 
 // Permissões por perfil
-// Perfis: 'master' (tudo), 'administrador' (dashboard+usuarios+relatorios), 'publicador' (agendamentos)
 const ROLE_TABS={
-  'master':    ['dashboard','users','schedule','logs','reports','config'],
-  'administrador': ['dashboard','users','reports'],
+  'master':    ['dashboard','users','schedule','imprevisto','support_points','locations','equipments','logs','reports','config'],
+  'administrador': ['dashboard','users','schedule','imprevisto','support_points','locations','equipments','reports'],
   'publicador': []
 };
 const ROLE_LABEL={'master':'👑 Master','administrador':'🔐 Admin','publicador':'👤 Publicador'};
@@ -2211,8 +2439,9 @@ function initAdminScreen(){
   // Fill cart dropdown
   const carts=load('carts')||[];
   const sel=document.getElementById('admin-sch-cart');
-  sel.innerHTML='<option value="">Todos os carrinhos</option>'+carts.map(c=>`<option value="${c.id}">${c.nome} — ${c.local}</option>`).join('');
-  document.getElementById('admin-sch-date').value=todayStr();
+  if(sel) sel.innerHTML='<option value="">Todos os carrinhos</option>'+carts.map(c=>`<option value="${c.id}">${c.nome} — ${c.local}</option>`).join('');
+  const schDate = document.getElementById('admin-sch-date');
+  if(schDate) schDate.value=todayStr();
   // Go to first allowed tab
   const first=allowed[0]||'dashboard';
   const firstBtn=document.querySelector(`#admin-tabs .tab[data-tab="${first}"]`);
@@ -2228,8 +2457,8 @@ function switchAdminTab(tab,el){
   }
   adminTab=tab;
   document.querySelectorAll('#admin-tabs .tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  const tabs=['dashboard','users','schedule','logs','reports','config'];
+  if (el) el.classList.add('active');
+  const tabs=['dashboard','users','schedule','imprevisto','support_points','locations','equipments','logs','reports','config'];
   tabs.forEach(t=>{
     const d=document.getElementById(`admin-${t}`);
     if(d) d.style.display=t===tab?'block':'none';
@@ -2237,6 +2466,10 @@ function switchAdminTab(tab,el){
   if(tab==='dashboard') renderAdminDashboard();
   if(tab==='users') renderAdminUsers();
   if(tab==='schedule') renderAdminSchedule();
+  if(tab==='imprevisto') renderAdminImprevisto();
+  if(tab==='support_points') renderAdminSupportPoints();
+  if(tab==='locations') renderAdminLocations();
+  if(tab==='equipments') renderAdminEquipments();
   if(tab==='logs') renderLogs();
   if(tab==='reports') renderReports();
   if(tab==='config') renderConfig();
@@ -3635,6 +3868,341 @@ function initPWA() {
       }
     });
   }
+}
+
+// ============================================================
+// HELP & FAQ DYNAMIC MODAL (70+ ELDERLY UX)
+// ============================================================
+function showHelpFAQModal() {
+  const supportPoints = load('support_points') || [];
+  const responsibilities = load('responsibilities') || [];
+
+  const existing = document.getElementById('faq-modal-overlay');
+  if (existing) existing.remove();
+
+  const modalEl = document.createElement('div');
+  modalEl.id = 'faq-modal-overlay';
+  modalEl.className = 'pwa-ios-modal-overlay';
+
+  let spHtml = supportPoints.map(sp => `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:10px;margin-bottom:10px">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">🏠 ${sp.name} (${sp.responsibleName || 'Responsável'})</div>
+      <div style="font-size:0.9rem;color:var(--gray-700);margin-top:2px">📍 Endereço: ${sp.address}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <a href="https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" class="btn btn-success btn-xs" style="font-size:0.85rem">📱 Falar no WhatsApp</a>
+        ${sp.mapsUrl ? `<a href="${sp.mapsUrl}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs" style="font-size:0.85rem">🗺️ Rota</a>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  let respHtml = responsibilities.map(r => `
+    <div style="background:#ebf4ff;border:1px solid #cbd5e1;padding:12px;border-radius:10px;margin-bottom:10px">
+      <div style="font-size:1rem;font-weight:700;color:var(--navy)">👤 ${r.personName}</div>
+      <div style="font-size:0.85rem;color:var(--gray-600);margin-top:2px">${r.help_text || ''}</div>
+      <a href="https://wa.me/55${(r.whatsapp||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" class="btn btn-primary btn-xs" style="margin-top:6px;font-size:0.85rem">📱 Contatar (${r.roleKey})</a>
+    </div>
+  `).join('');
+
+  modalEl.innerHTML = `
+    <div class="pwa-ios-modal" style="max-height:85vh;overflow-y:auto;padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="color:var(--navy);font-size:1.25rem">❓ Onde Pego o Carrinho? Ajuda e Dúvidas</h3>
+        <button onclick="document.getElementById('faq-modal-overlay').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer">✕</button>
+      </div>
+
+      <div style="font-weight:800;font-size:1.05rem;color:var(--blue);margin-bottom:8px">📦 PONTOS DE APOIO (ONDE RETIRAR E GUARDAR)</div>
+      ${spHtml}
+
+      <div style="font-weight:800;font-size:1.05rem;color:var(--blue);margin-top:16px;margin-bottom:8px">👤 RESPONSÁVEIS DE CADA ÁREA</div>
+      ${respHtml}
+
+      <button class="btn btn-primary btn-full" style="min-height:52px;margin-top:16px;font-weight:700" onclick="document.getElementById('faq-modal-overlay').remove()">Entendido / Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modalEl);
+}
+
+// ============================================================
+// MODO IMPREVISTO ADMIN HANDLERS
+// ============================================================
+function renderAdminImprevisto() {
+  const supportPoints = load('support_points') || [];
+  const closedSel = document.getElementById('imp-closed-point');
+  const fallbackSel = document.getElementById('imp-fallback-point');
+
+  if (closedSel) {
+    closedSel.innerHTML = '<option value="">-- Selecione o Ponto que Fechou --</option>' + 
+      supportPoints.map(sp => `<option value="${sp.id}">${sp.name} (${sp.responsibleName})</option>`).join('');
+  }
+  if (fallbackSel) {
+    fallbackSel.innerHTML = '<option value="">-- Selecione o Ponto Substituto --</option>' + 
+      supportPoints.map(sp => `<option value="${sp.id}">${sp.name} (${sp.responsibleName})</option>`).join('');
+  }
+
+  // Preenche data/hora padrão para amanhã 12:00
+  const untilInput = document.getElementById('imp-until-dt');
+  if (untilInput && !untilInput.value) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    untilInput.value = tomorrow.toISOString().slice(0, 16);
+  }
+
+  renderImprevistoAffectedList();
+}
+
+function onImprevistoPointSelect(closedPointId) {
+  const supportPoints = load('support_points') || [];
+  const closed = supportPoints.find(p => p.id === closedPointId);
+  const fallbackSel = document.getElementById('imp-fallback-point');
+
+  if (closed && fallbackSel) {
+    if (closed.fallbackPointId) {
+      fallbackSel.value = closed.fallbackPointId;
+    }
+  }
+  renderImprevistoAffectedList();
+}
+
+function saveImprevisto() {
+  const closedId = document.getElementById('imp-closed-point').value;
+  const untilDt = document.getElementById('imp-until-dt').value;
+  const reason = document.getElementById('imp-reason').value;
+  const fallbackId = document.getElementById('imp-fallback-point').value;
+
+  if (!closedId) { toast('Selecione qual ponto de apoio fechou.', 'error'); return; }
+  if (!untilDt) { toast('Informe até quando ficará fechado.', 'error'); return; }
+  if (!fallbackId) { toast('Selecione o ponto de apoio substituto.', 'error'); return; }
+
+  let supportPoints = load('support_points') || [];
+  const idx = supportPoints.findIndex(p => p.id === closedId);
+  if (idx >= 0) {
+    supportPoints[idx].unavailableUntil = new Date(untilDt).toISOString();
+    supportPoints[idx].unavailableReason = reason || 'Imprevisto';
+    supportPoints[idx].fallbackPointId = fallbackId;
+    save('support_points', supportPoints);
+    addLog(currentUser.id, currentUser.nome, 'MODO_IMPREVISTO_ATIVADO', `Ponto ${supportPoints[idx].name} fechado até ${untilDt} (substituto: ${fallbackId})`);
+    toast('🚨 Modo Imprevisto salvo! Sistema atualizado com fallback recursivo em tempo real.', 'success', 5000);
+    renderImprevistoAffectedList();
+  }
+}
+
+function renderImprevistoAffectedList() {
+  const container = document.getElementById('imp-affected-list');
+  if (!container) return;
+
+  const closedId = document.getElementById('imp-closed-point') ? document.getElementById('imp-closed-point').value : '';
+  const bookings = load('bookings') || [];
+  const today = todayStr();
+
+  const affected = bookings.filter(b => b.status === 'agendado' && b.data >= today);
+  if (!affected.length) {
+    container.innerHTML = '<p style="color:var(--gray-500);font-size:0.9rem">Nenhum agendamento futuro no momento.</p>';
+    return;
+  }
+
+  container.innerHTML = affected.map(b => `
+    <div style="background:#fff;border:1px solid var(--gray-300);padding:10px 14px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:0.95rem">${b.usuarioNome}</div>
+        <div style="font-size:0.8rem;color:var(--gray-600)">📍 ${b.carrinhoNome} • 📅 ${fmtD(b.data)} às ${b.turno}</div>
+      </div>
+      <a href="https://wa.me/55${(b.usuarioTelefone||'').replace(/[^0-9]/g,'')}?text=Olá!%20Aviso%20do%20Carrinho:%20O%20ponto%20de%20apoio%20mudou%20temporariamente.%20Verifique%20no%20app!" target="_blank" rel="noopener" class="btn btn-warning btn-xs">📱 Notificar WhatsApp</a>
+    </div>
+  `).join('');
+}
+
+function sendImprevistoWhatsAppAlerts() {
+  toast('Links diretos de WhatsApp gerados na lista acima para cada irmão afetado! ✅', 'info', 4000);
+}
+
+// ============================================================
+// ADMIN PONTOS DE APOIO CRUD
+// ============================================================
+function renderAdminSupportPoints() {
+  const list = load('support_points') || [];
+  const container = document.getElementById('admin-support-points-list');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state"><h3>Nenhum ponto de apoio cadastrado</h3></div>';
+    return;
+  }
+
+  container.innerHTML = list.map(sp => `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">🏠 ${sp.name}</div>
+          <div style="font-size:0.85rem;color:var(--gray-600)">Responsável: <b>${sp.responsibleName || '-'}</b> • 📱 ${sp.whatsapp || '-'}</div>
+          <div style="font-size:0.82rem;color:var(--gray-500)">📍 ${sp.address || '-'}</div>
+          ${sp.unavailableUntil && new Date(sp.unavailableUntil) > new Date() ? `<span class="badge badge-red" style="margin-top:4px">🔴 Fechado até ${fmtDT(sp.unavailableUntil)}</span>` : '<span class="badge badge-green" style="margin-top:4px">🟢 Aberto</span>'}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-xs" onclick="editSupportPoint('${sp.id}')">✏️ Editar</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openSupportPointModal(spId = null) {
+  const list = load('support_points') || [];
+  const sp = list.find(p => p.id === spId) || { name: '', responsibleName: '', address: '', whatsapp: '', mapsUrl: '' };
+
+  const resName = prompt('Nome do Ponto de Apoio (ex: Casa da Irmã Cida):', sp.name);
+  if (!resName) return;
+
+  const resp = prompt('Nome da Responsável (ex: Cida):', sp.responsibleName || '');
+  const addr = prompt('Endereço completo:', sp.address || '');
+  const phone = prompt('WhatsApp com DDD (somente números):', sp.whatsapp || '');
+
+  if (spId) {
+    const idx = list.findIndex(p => p.id === spId);
+    if (idx >= 0) {
+      list[idx].name = resName;
+      list[idx].responsibleName = resp;
+      list[idx].address = addr;
+      list[idx].whatsapp = phone;
+    }
+  } else {
+    list.push({
+      id: uuid(),
+      name: resName,
+      responsibleName: resp,
+      address: addr,
+      whatsapp: phone,
+      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(addr)}`,
+      isActive: true,
+      unavailableUntil: null,
+      unavailableReason: null,
+      fallbackPointId: null
+    });
+  }
+
+  save('support_points', list);
+  toast('Ponto de apoio salvo! 100% atualizado sem precisar de redeploy. 🎉', 'success');
+  renderAdminSupportPoints();
+}
+
+function editSupportPoint(spId) {
+  openSupportPointModal(spId);
+}
+
+// ============================================================
+// ADMIN LOCAIS DE SERVIÇO & EQUIPAMENTOS CRUD
+// ============================================================
+function renderAdminLocations() {
+  const serviceLocs = load('service_locations') || [];
+  const container = document.getElementById('admin-locations-list');
+  if (!container) return;
+
+  if (!serviceLocs.length) {
+    container.innerHTML = '<div class="empty-state"><h3>Nenhum local cadastrado</h3></div>';
+    return;
+  }
+
+  container.innerHTML = serviceLocs.map(loc => `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">📍 ${loc.name}</div>
+          <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${loc.type || 'Local de Serviço'}</b></div>
+        </div>
+        <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openLocationModal(locId = null) {
+  const list = load('service_locations') || [];
+  const loc = list.find(l => l.id === locId) || { name: '', type: 'Ponto de Táxi', mapsUrl: '' };
+
+  const name = prompt('Nome do Local de Serviço (ex: Padaria Lucidina):', loc.name);
+  if (!name) return;
+  const type = prompt('Tipo (ex: Ponto de Ônibus / Ponto de Táxi / Praça):', loc.type || 'Ponto de Táxi');
+
+  if (locId) {
+    const idx = list.findIndex(l => l.id === locId);
+    if (idx >= 0) { list[idx].name = name; list[idx].type = type; }
+  } else {
+    list.push({ id: uuid(), name, type, mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(name)}`, defaultSupportPointId: null, defaultEquipmentId: null, isActive: true });
+  }
+
+  save('service_locations', list);
+  toast('Local de Serviço salvo! 🎉', 'success');
+  renderAdminLocations();
+}
+
+function renderAdminEquipments() {
+  const eqList = load('equipments') || [];
+  const respList = load('responsibilities') || [];
+
+  const eqContainer = document.getElementById('admin-equipments-list');
+  if (eqContainer) {
+    eqContainer.innerHTML = eqList.map(eq => `
+      <div style="background:#fff;padding:12px 14px;border-radius:10px;border:1px solid var(--gray-300);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:1rem">🛒 ${eq.name}</div>
+          <div style="font-size:0.82rem;color:var(--gray-600)">Tipo: ${eq.type} • Status: ${eq.status}</div>
+        </div>
+        <button class="btn btn-primary btn-xs" onclick="openEquipmentModal('${eq.id}')">✏️ Editar</button>
+      </div>
+    `).join('');
+  }
+
+  const respContainer = document.getElementById('admin-responsibilities-list');
+  if (respContainer) {
+    respContainer.innerHTML = respList.map(r => `
+      <div style="background:#fff;padding:12px 14px;border-radius:10px;border:1px solid var(--gray-300);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:1rem">👤 ${r.personName} (${r.roleKey})</div>
+          <div style="font-size:0.82rem;color:var(--gray-600)">📱 ${r.whatsapp} • Ajuda: ${r.help_text}</div>
+        </div>
+        <button class="btn btn-primary btn-xs" onclick="openResponsibilityModal('${r.id}')">✏️ Editar</button>
+      </div>
+    `).join('');
+  }
+}
+
+async function openEquipmentModal(eqId = null) {
+  const list = load('equipments') || [];
+  const eq = list.find(e => e.id === eqId) || { name: '', type: 'carrinho_grande', status: 'disponível' };
+
+  const name = prompt('Nome do Equipamento (ex: Display Portátil Cida):', eq.name);
+  if (!name) return;
+
+  if (eqId) {
+    const idx = list.findIndex(e => e.id === eqId);
+    if (idx >= 0) list[idx].name = name;
+  } else {
+    list.push({ id: uuid(), name, type: 'carrinho_grande', currentSupportPointId: null, photoUrl: '', status: 'disponível', isActive: true });
+  }
+
+  save('equipments', list);
+  toast('Equipamento salvo! 🎉', 'success');
+  renderAdminEquipments();
+}
+
+async function openResponsibilityModal(rId = null) {
+  const list = load('responsibilities') || [];
+  const r = list.find(item => item.id === rId) || { personName: '', roleKey: 'manutencao', whatsapp: '', help_text: '' };
+
+  const name = prompt('Nome da Pessoa Responsável:', r.personName);
+  if (!name) return;
+  const phone = prompt('WhatsApp da Pessoa (com DDD, somente números):', r.whatsapp || '');
+  const help = prompt('Texto de Ajuda / FAQ que aparecerá para os publicadores:', r.help_text || '');
+
+  if (rId) {
+    const idx = list.findIndex(item => item.id === rId);
+    if (idx >= 0) { list[idx].personName = name; list[idx].whatsapp = phone; list[idx].help_text = help; }
+  } else {
+    list.push({ id: uuid(), roleKey: 'outros', personName: name, whatsapp: phone, help_text: help, displayOrder: 9 });
+  }
+
+  save('responsibilities', list);
+  toast('Responsabilidade salva! 100% atualizada no FAQ dinâmico. 🎉', 'success');
+  renderAdminEquipments();
 }
 
 function showIOSInstallInstructions() {
