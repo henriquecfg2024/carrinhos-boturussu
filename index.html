@@ -1807,16 +1807,27 @@ document.getElementById('cal-next').onclick=()=>{ calDate.setMonth(calDate.getMo
 // --- HELPER FUNCTION: GET MAPS URL FOR SUPPORT POINT ---
 function getSupportPointMapsUrl(sp) {
   if (!sp) return '';
-  if (sp.address && sp.address.trim()) {
-    return `https://maps.google.com/?q=${encodeURIComponent(sp.address.trim())}`;
+  const addr = (sp.address || '').trim();
+  if (addr) {
+    return `https://maps.google.com/?q=${encodeURIComponent(addr)}`;
   }
-  if (sp.mapsUrl && sp.mapsUrl.trim() && !sp.mapsUrl.includes('q=Casa+da+')) {
-    return sp.mapsUrl;
-  }
-  if (sp.name) {
-    return `https://maps.google.com/?q=${encodeURIComponent(sp.name.trim())}`;
+  const url = (sp.mapsUrl || '').trim();
+  if (url) return url;
+  const name = (sp.name || '').trim();
+  if (name) {
+    return `https://maps.google.com/?q=${encodeURIComponent(name)}`;
   }
   return '';
+}
+
+// --- HELPER FUNCTION: GET MAPS URL FOR SERVICE LOCATION / CART ---
+function getServiceLocationMapsUrl(cart) {
+  if (!cart) return '';
+  const addr = (cart.endereco || cart.local || cart.nome || '').trim();
+  if (addr) {
+    return `https://maps.google.com/?q=${encodeURIComponent(addr)}`;
+  }
+  return cart.googleMapsUrl || '';
 }
 
 // --- HELPER FUNCTION: GET EFFECTIVE SUPPORT POINT (CLIENT SIDE) ---
@@ -1989,7 +2000,7 @@ function renderCarts(){
         </div>
       </div>
       <div class="cart-body" style="padding:16px;background:#f8fafc">
-        <a class="btn btn-outline btn-full" href="${cart.googleMapsUrl}" target="_blank" rel="noopener" style="min-height:48px;margin-bottom:14px;font-size:0.95rem">🗺️ Ver no Google Maps do local de serviço</a>
+        <a class="btn btn-outline btn-full" href="${getServiceLocationMapsUrl(cart)}" target="_blank" rel="noopener" style="min-height:48px;margin-bottom:14px;font-size:0.95rem">🗺️ Ver no Google Maps do local de serviço</a>
         
         <div style="background:#fff;border:1px solid var(--gray-300);padding:14px;border-radius:12px;margin-bottom:14px">
           <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin-bottom:4px">📦 ONDE RETIRAR E DEVOLVER:</div>
@@ -3835,10 +3846,21 @@ function isIOS() {
 }
 
 function initPWA() {
+  // Purge old SW caches to force immediate update
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      keys.forEach(key => {
+        if (key !== 'agenda-carrinho-v20') {
+          caches.delete(key);
+        }
+      });
+    });
+  }
+
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=19').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=20').then((reg) => {
         console.log('SW registrado com sucesso:', reg.scope);
         reg.update();
       }).catch((err) => {
