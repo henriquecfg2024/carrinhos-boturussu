@@ -865,7 +865,7 @@ small{font-size:.8rem}
           </div>
           <div style="text-align:center;font-size:.78rem;color:var(--gray-400);margin-top:12px">
             Desenvolvido voluntariamente por <b>Henrique Gama</b><br>
-            Versão 2.2 • Sem fins lucrativos
+            Versão 2.3 • Sem fins lucrativos
           </div>
         </div>
       </div>
@@ -1936,8 +1936,7 @@ function renderCarts(){
           A ${defPoint.name} está indisponível hoje (${effectiveRes.reason || 'imprevisto'}).<br>
           Seu serviço no <b>${cart.local}</b> está <b>MANTIDO!</b><br>
           <div style="margin-top:8px;background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #f59e0b">
-            📍 <b>Retire em:</b> ${effPoint.name} (${effPoint.responsibleName}) — ${effPoint.address}<br>
-            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${effPoint.responsibleName}</a>` : ''}
+            📍 <b>Retire em:</b> ${effPoint.name} (${effPoint.responsibleName}) — ${effPoint.address}
           </div>
         </div>
       `;
@@ -2023,9 +2022,6 @@ function renderCarts(){
           <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin-bottom:4px">📦 ONDE RETIRAR E DEVOLVER:</div>
           <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${effPoint.name} (Responsável: ${effPoint.responsibleName || 'Irmã'})</div>
           <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${effPoint.address}</div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
-          </div>
         </div>
 
         <div style="background:#fff;border:1px solid var(--gray-300);padding:12px 14px;border-radius:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
@@ -3867,7 +3863,7 @@ function initPWA() {
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(key => {
-        if (key !== 'agenda-carrinho-v21') {
+        if (key !== 'agenda-carrinho-v22') {
           caches.delete(key);
         }
       });
@@ -3877,7 +3873,7 @@ function initPWA() {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=21').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=22').then((reg) => {
         console.log('SW registrado com sucesso:', reg.scope);
         reg.update();
       }).catch((err) => {
@@ -3965,7 +3961,6 @@ function showHelpFAQModal() {
       <div style="font-size:0.9rem;color:var(--gray-700);margin-top:2px">📍 Endereço: ${sp.address}</div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <a href="https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" class="btn btn-success btn-xs" style="font-size:0.85rem">📱 Falar no WhatsApp</a>
-        ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs" style="font-size:0.85rem">🗺️ Rota</a>` : ''}
       </div>
     </div>
   `;
