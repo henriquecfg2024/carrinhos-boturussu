@@ -1467,12 +1467,26 @@ function seedData(toSupabase = false){
   let supportPoints = load('support_points');
   if (!supportPoints || !supportPoints.length) {
     supportPoints = [
-      { id: 'sp-isabe', name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', photoUrl: '', whatsapp: '11999990001', mapsUrl: 'https://maps.google.com/?q=Casa+da+Isabe', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-dielly' },
-      { id: 'sp-renata', name: 'Casa da Irmã Renata', responsibleName: 'Renata', address: 'Av. Principal, 456', photoUrl: '', whatsapp: '11999990002', mapsUrl: 'https://maps.google.com/?q=Casa+da+Renata', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' },
-      { id: 'sp-dielly', name: 'Casa da Irmã Dielly', responsibleName: 'Dielly', address: 'Rua das Palmeiras, 78', photoUrl: '', whatsapp: '11999990003', mapsUrl: 'https://maps.google.com/?q=Casa+da+Dielly', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-laura' },
-      { id: 'sp-laura', name: 'Casa da Irmã Laura', responsibleName: 'Laura', address: 'Rua dos Sabiás, 90', photoUrl: '', whatsapp: '11999990004', mapsUrl: 'https://maps.google.com/?q=Casa+da+Laura', isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' }
+      { id: 'sp-isabe', name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', photoUrl: '', whatsapp: '11999990001', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua das Flores, 123 - Portão Azul'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-dielly' },
+      { id: 'sp-renata', name: 'Casa da Irmã Renata', responsibleName: 'Renata', address: 'Av. Principal, 456', photoUrl: '', whatsapp: '11999990002', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Av. Principal, 456'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' },
+      { id: 'sp-dielly', name: 'Casa da Irmã Dielly', responsibleName: 'Dielly', address: 'Rua das Palmeiras, 78', photoUrl: '', whatsapp: '11999990003', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua das Palmeiras, 78'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-laura' },
+      { id: 'sp-laura', name: 'Casa da Irmã Laura', responsibleName: 'Laura', address: 'Rua dos Sabiás, 90', photoUrl: '', whatsapp: '11999990004', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua dos Sabiás, 90'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' }
     ];
     saveFn('support_points', supportPoints);
+  } else {
+    let updated = false;
+    supportPoints.forEach(sp => {
+      if (sp.address) {
+        const expectedMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(sp.address.trim())}`;
+        if (sp.mapsUrl !== expectedMapsUrl && (!sp.mapsUrl || sp.mapsUrl.includes('q=Casa+da+'))) {
+          sp.mapsUrl = expectedMapsUrl;
+          updated = true;
+        }
+      }
+    });
+    if (updated) {
+      saveFn('support_points', supportPoints);
+    }
   }
 
   let equipments = load('equipments');
@@ -1790,6 +1804,21 @@ function selectDate(ds){
 document.getElementById('cal-prev').onclick=()=>{ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); };
 document.getElementById('cal-next').onclick=()=>{ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); };
 
+// --- HELPER FUNCTION: GET MAPS URL FOR SUPPORT POINT ---
+function getSupportPointMapsUrl(sp) {
+  if (!sp) return '';
+  if (sp.address && sp.address.trim()) {
+    return `https://maps.google.com/?q=${encodeURIComponent(sp.address.trim())}`;
+  }
+  if (sp.mapsUrl && sp.mapsUrl.trim() && !sp.mapsUrl.includes('q=Casa+da+')) {
+    return sp.mapsUrl;
+  }
+  if (sp.name) {
+    return `https://maps.google.com/?q=${encodeURIComponent(sp.name.trim())}`;
+  }
+  return '';
+}
+
 // --- HELPER FUNCTION: GET EFFECTIVE SUPPORT POINT (CLIENT SIDE) ---
 function getEffectiveSupportPoint(serviceLocId, datetimeStr = now()) {
   const serviceLocs = load('service_locations') || [];
@@ -1863,6 +1892,7 @@ function renderCarts(){
     const loc = serviceLocs.find(l => l.name === cart.local || l.id === cart.id) || { name: cart.local, mapsUrl: cart.googleMapsUrl, type: cart.descricao };
     const effectiveRes = getEffectiveSupportPoint(loc.id, selectedDate + 'T08:00:00');
     const effPoint = effectiveRes.point || { name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', mapsUrl: '' };
+    const effPointMapsUrl = getSupportPointMapsUrl(effPoint);
     const defPoint = effectiveRes.defaultPoint || effPoint;
     const eq = equipments[0] || { name: 'Carrinho Grande' };
 
@@ -1876,7 +1906,7 @@ function renderCarts(){
           Seu serviço no <b>${cart.local}</b> está <b>MANTIDO!</b><br>
           <div style="margin-top:8px;background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #f59e0b">
             📍 <b>Retire em:</b> ${effPoint.name} (${effPoint.responsibleName}) — ${effPoint.address}<br>
-            ${effPoint.mapsUrl ? `<a href="${effPoint.mapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${effPoint.responsibleName}</a>` : ''}
+            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${effPoint.responsibleName}</a>` : ''}
           </div>
         </div>
       `;
@@ -1963,7 +1993,7 @@ function renderCarts(){
           <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${effPoint.name} (Responsável: ${effPoint.responsibleName || 'Irmã'})</div>
           <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${effPoint.address}</div>
           <div style="display:flex;gap:8px;margin-top:10px">
-            ${effPoint.mapsUrl ? `<a href="${effPoint.mapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
+            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
           </div>
         </div>
 
@@ -3884,16 +3914,19 @@ function showHelpFAQModal() {
   modalEl.id = 'faq-modal-overlay';
   modalEl.className = 'pwa-ios-modal-overlay';
 
-  let spHtml = supportPoints.map(sp => `
+  let spHtml = supportPoints.map(sp => {
+    const mapsUrl = getSupportPointMapsUrl(sp);
+    return `
     <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:10px;margin-bottom:10px">
       <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">🏠 ${sp.name} (${sp.responsibleName || 'Responsável'})</div>
       <div style="font-size:0.9rem;color:var(--gray-700);margin-top:2px">📍 Endereço: ${sp.address}</div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <a href="https://wa.me/55${(sp.whatsapp||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" class="btn btn-success btn-xs" style="font-size:0.85rem">📱 Falar no WhatsApp</a>
-        ${sp.mapsUrl ? `<a href="${sp.mapsUrl}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs" style="font-size:0.85rem">🗺️ Rota</a>` : ''}
+        ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs" style="font-size:0.85rem">🗺️ Rota</a>` : ''}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   let respHtml = responsibilities.map(r => `
     <div style="background:#ebf4ff;border:1px solid #cbd5e1;padding:12px;border-radius:10px;margin-bottom:10px">
@@ -4063,6 +4096,7 @@ async function openSupportPointModal(spId = null) {
       list[idx].responsibleName = resp;
       list[idx].address = addr;
       list[idx].whatsapp = phone;
+      list[idx].mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(addr || resName)}`;
     }
   } else {
     list.push({
@@ -4071,7 +4105,7 @@ async function openSupportPointModal(spId = null) {
       responsibleName: resp,
       address: addr,
       whatsapp: phone,
-      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(addr)}`,
+      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(addr || resName)}`,
       isActive: true,
       unavailableUntil: null,
       unavailableReason: null,
