@@ -1932,7 +1932,7 @@
               </div>
               <div style="text-align:center;font-size:.78rem;color:var(--gray-400);margin-top:12px">
                 Desenvolvido voluntariamente por <b>Henrique Gama</b><br>
-                Versão 2.4 • Sem fins lucrativos
+                Versão 2.5 • Sem fins lucrativos
               </div>
             </div>
           </div>
@@ -5008,7 +5008,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(key => {
-            if (key !== 'agenda-carrinho-v23') {
+            if (key !== 'agenda-carrinho-v24') {
               caches.delete(key);
             }
           });
@@ -5018,7 +5018,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js?v=23').then((reg) => {
+          navigator.serviceWorker.register('./sw.js?v=24').then((reg) => {
             console.log('SW registrado com sucesso:', reg.scope);
             reg.update();
           }).catch((err) => {
@@ -5414,6 +5414,7 @@
     // ============================================================
     function renderAdminLocations() {
       const serviceLocs = load('service_locations') || [];
+      const supportPoints = load('support_points') || [];
       const container = document.getElementById('admin-locations-list');
       if (!container) return;
 
@@ -5422,37 +5423,109 @@
         return;
       }
 
-      container.innerHTML = serviceLocs.map(loc => `
+      container.innerHTML = serviceLocs.map(loc => {
+        const sp = supportPoints.find(p => p.id === loc.defaultSupportPointId);
+        const spLabel = sp ? `${sp.name} (${sp.responsibleName || 'Irmã'})` : 'Padrão da Congregação';
+        return `
     <div class="card" style="margin-bottom:12px">
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">📍 ${loc.name}</div>
           <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${loc.type || 'Local de Serviço'}</b></div>
+          <div style="font-size:0.82rem;color:var(--blue);margin-top:2px">📦 Ponto de Apoio: <b>${spLabel}</b></div>
         </div>
         <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
       </div>
     </div>
-  `).join('');
+  `;
+      }).join('');
     }
 
     async function openLocationModal(locId = null) {
       const list = load('service_locations') || [];
-      const loc = list.find(l => l.id === locId) || { name: '', type: 'Ponto de Táxi', mapsUrl: '' };
+      const supportPoints = load('support_points') || [];
+      const equipments = load('equipments') || [];
+      const loc = list.find(l => l.id === locId) || { name: '', type: 'Ponto de Ônibus', mapsUrl: '', defaultSupportPointId: '', defaultEquipmentId: '' };
 
-      const name = prompt('Nome do Local de Serviço (ex: Padaria Lucidina):', loc.name);
-      if (!name) return;
-      const type = prompt('Tipo (ex: Ponto de Ônibus / Ponto de Táxi / Praça):', loc.type || 'Ponto de Táxi');
+      const spOptions = supportPoints.map(sp => 
+        `<option value="${sp.id}" ${sp.id === loc.defaultSupportPointId ? 'selected' : ''}>🏠 ${sp.name} (${sp.responsibleName || 'Irmã'})</option>`
+      ).join('');
 
-      if (locId) {
-        const idx = list.findIndex(l => l.id === locId);
-        if (idx >= 0) { list[idx].name = name; list[idx].type = type; }
-      } else {
-        list.push({ id: uuid(), name, type, mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(name)}`, defaultSupportPointId: null, defaultEquipmentId: null, isActive: true });
+      const eqOptions = equipments.map(eq => 
+        `<option value="${eq.id}" ${eq.id === loc.defaultEquipmentId ? 'selected' : ''}>🛒 ${eq.name}</option>`
+      ).join('');
+
+      const modalHtml = `
+        <div class="form-group">
+          <label class="form-label">Nome do Local de Serviço</label>
+          <input class="form-control" id="loc-edit-name" value="${loc.name || ''}" placeholder="Ex: Padaria Lucidina" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo do Ponto</label>
+          <input class="form-control" id="loc-edit-type" value="${loc.type || ''}" placeholder="Ex: Ponto de Ônibus / Ponto de Táxi" />
+        </div>
+        <div class="form-group" style="background:var(--gray-50);padding:12px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:12px">
+          <label class="form-label" style="font-weight:700;color:var(--navy);margin-bottom:6px">📦 Onde Retirar e Devolver (Ponto de Apoio)</label>
+          <select class="form-control" id="loc-edit-sp">
+            <option value="">-- Selecione o Ponto de Apoio --</option>
+            ${spOptions}
+          </select>
+        </div>
+        <div class="form-group" style="background:var(--gray-50);padding:12px;border-radius:8px;border:1px solid var(--gray-200)">
+          <label class="form-label" style="font-weight:700;color:var(--navy);margin-bottom:6px">🛒 Equipamento Utilizado</label>
+          <select class="form-control" id="loc-edit-eq">
+            <option value="">-- Selecione o Equipamento --</option>
+            ${eqOptions}
+          </select>
+        </div>
+      `;
+
+      const res = await modal({
+        title: locId ? '✏️ Editar Local de Serviço (Carrinho)' : '➕ Novo Local de Serviço',
+        html: modalHtml,
+        actions: [
+          { label: 'Salvar Alterações', cls: 'btn-success', value: 'save' },
+          { label: 'Cancelar', cls: 'btn-ghost', value: null }
+        ]
+      });
+
+      if (res === 'save') {
+        const name = document.getElementById('loc-edit-name').value.trim();
+        const type = document.getElementById('loc-edit-type').value.trim();
+        const spId = document.getElementById('loc-edit-sp').value;
+        const eqId = document.getElementById('loc-edit-eq').value;
+
+        if (!name) {
+          toast('Por favor, informe o nome do local de serviço.', 'error');
+          return;
+        }
+
+        const updatedData = {
+          name,
+          type,
+          defaultSupportPointId: spId,
+          defaultEquipmentId: eqId,
+          mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(name)}`
+        };
+
+        if (locId) {
+          const idx = list.findIndex(l => l.id === locId);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], ...updatedData };
+          }
+        } else {
+          list.push({
+            id: uuid(),
+            ...updatedData,
+            isActive: true
+          });
+        }
+
+        save('service_locations', list);
+        toast('Local de Serviço salvo com sucesso! 🎉', 'success');
+        renderAdminLocations();
+        renderCarts();
       }
-
-      save('service_locations', list);
-      toast('Local de Serviço salvo! 🎉', 'success');
-      renderAdminLocations();
     }
 
     function renderAdminEquipments() {
