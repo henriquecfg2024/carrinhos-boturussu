@@ -350,8 +350,8 @@ small{font-size:.8rem}
 .slot-item{
   background:var(--white);border-radius:var(--radius-sm);
   border:1.5px solid var(--gray-100);
-  padding:11px 14px;
-  display:flex;align-items:center;gap:12px;
+  padding:14px;
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
   transition:border-color var(--transition),box-shadow var(--transition);
 }
 .slot-item:hover{border-color:var(--gray-200);box-shadow:var(--shadow-sm)}
@@ -1918,24 +1918,24 @@ function renderCarts(){
         badge=mine.status==='agendado'?`<span class="badge badge-blue" style="font-size:0.9rem">🔵 Agendado</span>`:
               mine.status==='presente'?`<span class="badge badge-green" style="font-size:0.9rem">🟢 Presente</span>`:
               `<span class="badge badge-gray" style="font-size:0.9rem">⚫ Finalizado</span>`;
-        if(canCheckin) action=`<button class="btn btn-success" style="min-height:52px" onclick="doCheckin('${mine.id}')">✅ Check-in</button>`;
-        else if(canCheckout) action=`<button class="btn btn-warning" style="min-height:52px" onclick="doCheckout('${mine.id}')">🏁 Check-out</button>`;
-        else if(mine.status==='agendado'&&!isPast) action=`<button class="btn btn-danger" style="min-height:52px" onclick="cancelBooking('${mine.id}')">✖ Cancelar</button>`;
+        if(canCheckin) action=`<button class="btn btn-success btn-full" style="min-height:52px;font-weight:700" onclick="doCheckin('${mine.id}')">✅ Check-in</button>`;
+        else if(canCheckout) action=`<button class="btn btn-warning btn-full" style="min-height:52px;font-weight:700" onclick="doCheckout('${mine.id}')">🏁 Check-out</button>`;
+        else if(mine.status==='agendado'&&!isPast) action=`<button class="btn btn-danger btn-full" style="min-height:52px;font-weight:700" onclick="cancelBooking('${mine.id}')">✖ Cancelar</button>`;
       } else if(inWaiting){
         const pos=waiting.filter(w=>w.carrinhoId===cart.id&&w.data===selectedDate&&w.turno===turno).findIndex(w=>w.usuarioId===currentUser.id)+1;
         badge=`<span class="badge badge-yellow" style="font-size:0.9rem">⏳ Fila #${pos}</span>`;
-        action=`<button class="btn btn-ghost" style="min-height:52px" onclick="leaveWaiting('${inWaiting.id}')">Sair da fila</button>`;
+        action=`<button class="btn btn-ghost btn-full" style="min-height:52px;font-weight:700" onclick="leaveWaiting('${inWaiting.id}')">Sair da fila</button>`;
       } else if(isFull){
         badge=`<span class="badge badge-red" style="font-size:0.9rem">🔴 Lotado (${count}/${cart.capMax})</span>`;
-        action=`<button class="btn btn-warning" style="min-height:52px" onclick="joinWaiting('${cart.id}','${selectedDate}','${turno}')">⏳ Entrar na Fila</button>`;
+        action=`<button class="btn btn-warning btn-full" style="min-height:52px;font-weight:700" onclick="joinWaiting('${cart.id}','${selectedDate}','${turno}')">⏳ Entrar na Fila</button>`;
       } else {
         badge=`<span class="badge badge-green" style="font-size:0.9rem">${count}/${cart.capMax} vagas</span>`;
-        if(tooSoon) action=`<button class="btn btn-ghost" disabled style="min-height:52px">⏱ Em breve</button>`;
-        else action=`<button class="btn btn-primary" style="min-height:52px;font-size:1.1rem;font-weight:700" onclick="createBooking('${cart.id}','${selectedDate}','${turno}')">+ Agendar (52px)</button>`;
+        if(tooSoon) action=`<button class="btn btn-ghost btn-full" disabled style="min-height:52px;font-weight:700">⏱ Em breve</button>`;
+        else action=`<button class="btn btn-primary btn-full" style="min-height:52px;font-size:1.1rem;font-weight:700" onclick="createBooking('${cart.id}','${selectedDate}','${turno}')">+ Agendar</button>`;
       }
 
       slotsHtml+=`
-        <div class="slot-item ${mine?'mine':''} ${isFull&&!mine?'full':''}" style="margin-bottom:12px;padding:14px;border-radius:12px;border:1px solid var(--gray-200);background:#fff">
+        <div class="slot-item ${mine?'mine':''} ${isFull&&!mine?'full':''}" style="display:flex;flex-direction:column;align-items:stretch;margin-bottom:12px;padding:14px;border-radius:12px;border:1px solid var(--gray-200);background:#fff">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">🕐 ${turno}</div>
             <div>${badge}</div>
@@ -1943,7 +1943,7 @@ function renderCarts(){
           <div style="font-size:0.9rem;color:var(--gray-600);margin-bottom:6px">👥 Confirmados: <b>${names}</b></div>
           <div class="people-dots" style="margin-bottom:8px">${dots}</div>
           ${statusMsg ? `<div style="background:var(--yellow-light);color:var(--yellow);padding:6px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;margin-bottom:10px">⚠️ ${statusMsg}</div>` : ''}
-          <div style="margin-top:10px">${action}</div>
+          ${action ? `<div style="margin-top:4px">${action}</div>` : ''}
         </div>`;
     });
 
