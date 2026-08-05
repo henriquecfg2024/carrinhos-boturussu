@@ -865,7 +865,7 @@ small{font-size:.8rem}
           </div>
           <div style="text-align:center;font-size:.78rem;color:var(--gray-400);margin-top:12px">
             Desenvolvido voluntariamente por <b>Henrique Gama</b><br>
-            Versão 2.1 • Sem fins lucrativos
+            Versão 2.2 • Sem fins lucrativos
           </div>
         </div>
       </div>
@@ -1464,11 +1464,14 @@ function seedData(toSupabase = false){
   if(!load('config')) saveFn('config',{ minHours:2 });
 
   // 5. Initial Seed for Support Points, Service Locations, Equipments & Responsibilities
+  const addrIsabel = 'Rua Paulo Bifano Alves, 435 - Parque Boturussu, São Paulo - SP, 03801-000';
+  const addrRenata = 'Rua Professora Branca do Canto e Mello, 52 - Parque Boturussu, São Paulo - SP, 03802-015';
+
   let supportPoints = load('support_points');
   if (!supportPoints || !supportPoints.length) {
     supportPoints = [
-      { id: 'sp-isabe', name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', photoUrl: '', whatsapp: '11999990001', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua das Flores, 123 - Portão Azul'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-dielly' },
-      { id: 'sp-renata', name: 'Casa da Irmã Renata', responsibleName: 'Renata', address: 'Av. Principal, 456', photoUrl: '', whatsapp: '11999990002', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Av. Principal, 456'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' },
+      { id: 'sp-isabe', name: 'Casa da Irmã Isabel', responsibleName: 'Isabel', address: addrIsabel, photoUrl: '', whatsapp: '11999990001', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent(addrIsabel), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-dielly' },
+      { id: 'sp-renata', name: 'Casa da Irmã Renata', responsibleName: 'Renata', address: addrRenata, photoUrl: '', whatsapp: '11999990002', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent(addrRenata), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' },
       { id: 'sp-dielly', name: 'Casa da Irmã Dielly', responsibleName: 'Dielly', address: 'Rua das Palmeiras, 78', photoUrl: '', whatsapp: '11999990003', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua das Palmeiras, 78'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-laura' },
       { id: 'sp-laura', name: 'Casa da Irmã Laura', responsibleName: 'Laura', address: 'Rua dos Sabiás, 90', photoUrl: '', whatsapp: '11999990004', mapsUrl: 'https://maps.google.com/?q=' + encodeURIComponent('Rua dos Sabiás, 90'), isActive: true, unavailableUntil: null, unavailableReason: null, fallbackPointId: 'sp-isabe' }
     ];
@@ -1476,9 +1479,23 @@ function seedData(toSupabase = false){
   } else {
     let updated = false;
     supportPoints.forEach(sp => {
-      if (sp.address) {
+      if (sp.id === 'sp-isabe' || (sp.name && sp.name.includes('Isabe'))) {
+        sp.name = 'Casa da Irmã Isabel';
+        sp.responsibleName = 'Isabel';
+        sp.address = addrIsabel;
+        sp.mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(addrIsabel)}`;
+        updated = true;
+      }
+      if (sp.id === 'sp-renata' || (sp.name && sp.name.includes('Renata'))) {
+        sp.name = 'Casa da Irmã Renata';
+        sp.responsibleName = 'Renata';
+        sp.address = addrRenata;
+        sp.mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(addrRenata)}`;
+        updated = true;
+      }
+      if (sp.address && sp.address.trim()) {
         const expectedMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(sp.address.trim())}`;
-        if (sp.mapsUrl !== expectedMapsUrl && (!sp.mapsUrl || sp.mapsUrl.includes('q=Casa+da+'))) {
+        if (sp.mapsUrl !== expectedMapsUrl) {
           sp.mapsUrl = expectedMapsUrl;
           updated = true;
         }
@@ -1902,7 +1919,7 @@ function renderCarts(){
     // Resolve Local de Serviço, Equipamento e Ponto de Apoio Efetivo
     const loc = serviceLocs.find(l => l.name === cart.local || l.id === cart.id) || { name: cart.local, mapsUrl: cart.googleMapsUrl, type: cart.descricao };
     const effectiveRes = getEffectiveSupportPoint(loc.id, selectedDate + 'T08:00:00');
-    const effPoint = effectiveRes.point || { name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', mapsUrl: '' };
+    const effPoint = effectiveRes.point || { name: 'Casa da Irmã Isabel', responsibleName: 'Isabel', address: 'Rua Paulo Bifano Alves, 435 - Parque Boturussu, São Paulo - SP, 03801-000', mapsUrl: '' };
     if (effPoint && effPoint.address) {
       effPoint.mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(effPoint.address.trim())}`;
     }
@@ -3850,7 +3867,7 @@ function initPWA() {
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(key => {
-        if (key !== 'agenda-carrinho-v20') {
+        if (key !== 'agenda-carrinho-v21') {
           caches.delete(key);
         }
       });
@@ -3860,7 +3877,7 @@ function initPWA() {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=20').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=21').then((reg) => {
         console.log('SW registrado com sucesso:', reg.scope);
         reg.update();
       }).catch((err) => {
