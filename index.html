@@ -865,7 +865,7 @@ small{font-size:.8rem}
           </div>
           <div style="text-align:center;font-size:.78rem;color:var(--gray-400);margin-top:12px">
             Desenvolvido voluntariamente por <b>Henrique Gama</b><br>
-            Versão 2.0 • Sem fins lucrativos
+            Versão 2.1 • Sem fins lucrativos
           </div>
         </div>
       </div>
@@ -3838,7 +3838,7 @@ function initPWA() {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=18').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=19').then((reg) => {
         console.log('SW registrado com sucesso:', reg.scope);
         reg.update();
       }).catch((err) => {
