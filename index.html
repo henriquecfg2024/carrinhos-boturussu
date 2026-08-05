@@ -1892,6 +1892,9 @@ function renderCarts(){
     const loc = serviceLocs.find(l => l.name === cart.local || l.id === cart.id) || { name: cart.local, mapsUrl: cart.googleMapsUrl, type: cart.descricao };
     const effectiveRes = getEffectiveSupportPoint(loc.id, selectedDate + 'T08:00:00');
     const effPoint = effectiveRes.point || { name: 'Casa da Irmã Isabe', responsibleName: 'Isabe', address: 'Rua das Flores, 123 - Portão Azul', mapsUrl: '' };
+    if (effPoint && effPoint.address) {
+      effPoint.mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(effPoint.address.trim())}`;
+    }
     const effPointMapsUrl = getSupportPointMapsUrl(effPoint);
     const defPoint = effectiveRes.defaultPoint || effPoint;
     const eq = equipments[0] || { name: 'Carrinho Grande' };
@@ -3835,8 +3838,9 @@ function initPWA() {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=18').then((reg) => {
         console.log('SW registrado com sucesso:', reg.scope);
+        reg.update();
       }).catch((err) => {
         console.warn('Falha no registro do SW:', err);
       });
