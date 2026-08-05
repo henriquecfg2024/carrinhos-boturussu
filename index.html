@@ -1932,7 +1932,7 @@
               </div>
               <div style="text-align:center;font-size:.78rem;color:var(--gray-400);margin-top:12px">
                 Desenvolvido voluntariamente por <b>Henrique Gama</b><br>
-                Versão 2.5 • Sem fins lucrativos
+                Versão 2.6 • Sem fins lucrativos
               </div>
             </div>
           </div>
@@ -2661,9 +2661,22 @@
         serviceLocations = [
           { id: 'c1', name: 'Padaria União', type: 'Ponto de Táxi', mapsUrl: 'https://www.google.com/maps/search/Padaria+União', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-cg1', isActive: true },
           { id: 'c2', name: 'CAPS', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/CAPS', photoUrl: '', defaultSupportPointId: 'sp-renata', defaultEquipmentId: 'eq-cg1', isActive: true },
-          { id: 'c3', name: 'Padaria Lucidina', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', photoUrl: '', defaultSupportPointId: 'sp-dielly', defaultEquipmentId: 'eq-dp1', isActive: true }
+          { id: 'c3', name: 'Padaria Lucidina', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-dp1', isActive: true }
         ];
         saveFn('service_locations', serviceLocations);
+      } else {
+        let updated = false;
+        serviceLocations.forEach(loc => {
+          if (loc.id === 'c3' || (loc.name && loc.name.includes('Lucidina'))) {
+            if (loc.defaultSupportPointId !== 'sp-isabe') {
+              loc.defaultSupportPointId = 'sp-isabe';
+              updated = true;
+            }
+          }
+        });
+        if (updated) {
+          saveFn('service_locations', serviceLocations);
+        }
       }
 
       let responsibilities = load('responsibilities');
@@ -5008,7 +5021,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(key => {
-            if (key !== 'agenda-carrinho-v24') {
+            if (key !== 'agenda-carrinho-v25') {
               caches.delete(key);
             }
           });
@@ -5018,7 +5031,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js?v=24').then((reg) => {
+          navigator.serviceWorker.register('./sw.js?v=25').then((reg) => {
             console.log('SW registrado com sucesso:', reg.scope);
             reg.update();
           }).catch((err) => {
