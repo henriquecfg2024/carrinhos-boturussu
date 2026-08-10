@@ -2514,8 +2514,6 @@
       dataCadastro: p.created_at
     }) : null;
     const now = () => new Date().toISOString();
-    const fmtDT = s => { if (!s) return '-'; const d = new Date(s); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
-    const fmtD = s => { if (!s) return '-'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
     const localDateStr = (dt = new Date()) => {
       const y = dt.getFullYear();
       const m = String(dt.getMonth() + 1).padStart(2, '0');
