@@ -14,5 +14,4 @@ CREATE TABLE IF NOT EXISTS public.service_locations (
 ALTER TABLE public.service_locations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Leitura publica service_locations" ON public.service_locations;
 CREATE POLICY "Leitura publica service_locations" ON public.service_locations FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Escrita admin service_locations" ON public.service_locations;
-CREATE POLICY "Escrita admin service_locations" ON public.service_locations FOR ALL USING (true);
+-- Escrita administrativa é criada pela migration 08_auth_hardening.sql.

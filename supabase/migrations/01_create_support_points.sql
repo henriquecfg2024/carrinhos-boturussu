@@ -18,5 +18,4 @@ CREATE TABLE IF NOT EXISTS public.support_points (
 ALTER TABLE public.support_points ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Leitura publica support_points" ON public.support_points;
 CREATE POLICY "Leitura publica support_points" ON public.support_points FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Escrita admin support_points" ON public.support_points;
-CREATE POLICY "Escrita admin support_points" ON public.support_points FOR ALL USING (true);
+-- Escrita administrativa é criada pela migration 08_auth_hardening.sql.

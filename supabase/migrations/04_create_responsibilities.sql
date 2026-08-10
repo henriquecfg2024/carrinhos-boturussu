@@ -13,5 +13,4 @@ CREATE TABLE IF NOT EXISTS public.responsibilities (
 ALTER TABLE public.responsibilities ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Leitura publica responsibilities" ON public.responsibilities;
 CREATE POLICY "Leitura publica responsibilities" ON public.responsibilities FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Escrita admin responsibilities" ON public.responsibilities;
-CREATE POLICY "Escrita admin responsibilities" ON public.responsibilities FOR ALL USING (true);
+-- Escrita administrativa é criada pela migration 08_auth_hardening.sql.

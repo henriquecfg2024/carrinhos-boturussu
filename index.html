@@ -2411,14 +2411,33 @@
     };
 
     const save = (k, v) => {
-      saveLocalOnly(k, v);
-      if (supabaseClient) {
-        supabaseClient.from('app_store').upsert({ key: k, data: v }, { onConflict: 'key' }).then(({ error }) => {
-          if (error && error.code === '42P01') {
-            // Tabela não existe ainda no Supabase, mantendo no cache local
-          }
-        }).catch(() => { });
+      // O cache local é apenas uma conveniência offline; nunca é uma fonte de
+      // autenticação ou autorização.
+      if (k === 'users') {
+        saveLocalOnly(k, (v || []).map(({ senha, senhaHash, password, ...profile }) => profile));
+        if (!supabaseClient || !isPrivilegedUser()) return;
+        (v || []).forEach(profile => {
+          supabaseClient.from('profiles').update({
+            nome: profile.nome,
+            telefone: profile.telefone,
+            perfil: profile.perfil,
+            status: profile.status,
+            congregacao_id: profile.congregacaoId || 'boturussu',
+            updated_at: new Date().toISOString()
+          }).eq('id', profile.authId || profile.id).then(({ error }) => {
+            if (error) console.error('Falha ao atualizar perfil:', error.message);
+          });
+        });
+        return;
       }
+
+      saveLocalOnly(k, v);
+      // O RLS no banco é a proteção definitiva; este filtro apenas evita
+      // chamadas remotas incompatíveis durante a transição.
+      if (!supabaseClient || !canWriteLegacyKey(k)) return;
+      supabaseClient.from('app_store').upsert({ key: k, data: v }, { onConflict: 'key' })
+        .then(({ error }) => { if (error) console.error('Falha ao sincronizar dados:', error.message); })
+        .catch(() => { });
     };
 
     async function syncWithSupabase() {
@@ -2430,7 +2449,7 @@
         const { data, error } = await supabaseClient.from('app_store').select('*');
         if (!error && data && data.length > 0) {
           data.forEach(item => {
-            if (item.key && item.data !== undefined) {
+            if (item.key && item.key !== 'users' && item.data !== undefined) {
               saveLocalOnly(item.key, item.data);
             }
           });
@@ -2456,7 +2475,7 @@
       try {
         supabaseClient.channel('realtime_store')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'app_store' }, payload => {
-            if (payload.new && payload.new.key && payload.new.data) {
+            if (payload.new && payload.new.key && payload.new.key !== 'users' && payload.new.data) {
               saveLocalOnly(payload.new.key, payload.new.data);
               if (payload.new.key === 'users') seedData(true);
               if (typeof renderCarts === 'function' && currentScreen === 'pub') renderCarts();
@@ -2471,7 +2490,29 @@
     }
 
     const uuid = () => ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-    const encPwd = p => btoa(unescape(encodeURIComponent(p)));
+    // Senhas nunca são processadas ou armazenadas pelo frontend.
+    const authEmailForPhone = phone => `${String(phone || '').replace(/[^0-9]/g, '')}@auth.app-carrinho.local`;
+    const isPrivilegedUser = () => Boolean(currentUser && ['master', 'administrador'].includes((currentUser.perfil || '').toLowerCase()));
+    const canWriteLegacyKey = k => isPrivilegedUser() || Boolean(
+      currentUser && currentUser.status === 'ativo' && (
+        k === 'bookings' || k === 'waiting' ||
+        k === `report_${currentUser.id}` || k === `report_cfg_${currentUser.id}` ||
+        (currentUser.authId && (k === `report_${currentUser.authId}` || k === `report_cfg_${currentUser.authId}`))
+      )
+    );
+    const escHtml = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const fmtDT = s => { if (!s) return '-'; const d = new Date(s); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
+    const fmtD = s => { if (!s) return '-'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
+    const profileToLegacyUser = p => p ? ({
+      id: p.legacy_id || p.id,
+      authId: p.id,
+      nome: p.nome,
+      telefone: p.telefone,
+      perfil: p.perfil,
+      status: p.status,
+      congregacaoId: p.congregacao_id || 'boturussu',
+      dataCadastro: p.created_at
+    }) : null;
     const now = () => new Date().toISOString();
     const fmtDT = s => { if (!s) return '-'; const d = new Date(s); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
     const fmtD = s => { if (!s) return '-'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
@@ -2514,42 +2555,9 @@
         saveFn('congregacoes', congregacoes);
       }
 
-      // 2. Users (Garante conta admin legada e Henrique Master)
-      let users = load('users') || [];
-      let updated = false;
-
-      // Garante conta 'admin' legada para login com 'ADMIN'
-      let adminAcc = users.find(u => u.telefone === 'admin' || u.nome === 'Administrador');
-      if (!adminAcc) {
-        adminAcc = { id: uuid(), nome: 'Administrador', telefone: 'admin', senha: encPwd('admin123'), perfil: 'master', status: 'ativo', congregacaoId: 'boturussu', dataCadastro: now() };
-        users.unshift(adminAcc);
-        updated = true;
-      } else {
-        if (adminAcc.telefone !== 'admin') { adminAcc.telefone = 'admin'; updated = true; }
-        if (adminAcc.perfil !== 'master') { adminAcc.perfil = 'master'; updated = true; }
-        if (adminAcc.status !== 'ativo') { adminAcc.status = 'ativo'; updated = true; }
-      }
-
-      // Garante conta Henrique Master
-      let henriqueReal = users.find(u =>
-        (u.telefone || '').replace(/[^0-9]/g, '') === '11920066472' ||
-        (u.nome || '').toLowerCase().includes('henrique')
-      );
-      if (henriqueReal) {
-        if (henriqueReal.perfil !== 'master') { henriqueReal.perfil = 'master'; updated = true; }
-        if (henriqueReal.status !== 'ativo') { henriqueReal.status = 'ativo'; updated = true; }
-        if (henriqueReal.telefone !== '11920066472') { henriqueReal.telefone = '11920066472'; updated = true; }
-      } else {
-        const masterAccount = { id: uuid(), nome: 'Henrique Cesar Ferreira Gama', telefone: '11920066472', senha: encPwd('admin123'), perfil: 'master', status: 'ativo', congregacaoId: 'boturussu', dataCadastro: now() };
-        users.push(masterAccount);
-        updated = true;
-      }
-
-      users.forEach(u => {
-        if (!u.congregacaoId) { u.congregacaoId = 'boturussu'; updated = true; }
-      });
-
-      if (updated) save('users', users);
+      // 2. Usuários são gerenciados exclusivamente pelo Supabase Auth e pela
+      // tabela profiles. Nunca criar contas ou armazenar senhas no frontend.
+      localStorage.removeItem(KEY('users'));
 
       // 3. Carts (Garante congregacaoId: 'boturussu')
       let carts = load('carts');
@@ -2760,25 +2768,78 @@
     // ============================================================
     let currentUser = null;
 
-    function login(phone, pass) {
-      const cleanInput = (phone || '').trim();
-      const cleanDigits = cleanInput.replace(/[^0-9]/g, '');
-      const users = load('users') || [];
-      const u = users.find(x =>
-        x.senha === encPwd(pass) && (
-          (x.telefone && x.telefone.toLowerCase() === cleanInput.toLowerCase()) ||
-          (cleanDigits && (x.telefone || '').replace(/[^0-9]/g, '') === cleanDigits)
-        )
-      );
-      if (!u) return { ok: false, msg: 'Telefone ou senha incorretos.' };
-      if (u.status === 'pendente') return { ok: false, msg: 'Seu cadastro ainda aguarda aprovação do administrador.' };
-      if (u.status === 'inativo') return { ok: false, msg: 'Sua conta está desativada. Fale com o administrador.' };
-      currentUser = u;
-      addLog(u.id, u.nome, 'LOGIN_REALIZADO', `Login realizado`);
+    async function loadCurrentProfile(userId) {
+      if (!supabaseClient || !userId) return null;
+      const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+      if (error || !data) return null;
+      currentUser = profileToLegacyUser(data);
+      saveLocalOnly('users', [currentUser]);
+      return currentUser;
+    }
+
+    async function loadProfilesForAdmin() {
+      if (!supabaseClient || !isPrivilegedUser()) return;
+      const { data, error } = await supabaseClient.from('profiles').select('*');
+      if (error) {
+        console.error('Falha ao carregar perfis:', error.message);
+        return;
+      }
+      saveLocalOnly('users', (data || []).map(profileToLegacyUser));
+    }
+
+    async function restoreAuth() {
+      if (!supabaseClient) return false;
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) return false;
+      const profile = await loadCurrentProfile(session.user.id);
+      if (!profile || profile.status !== 'ativo') {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        return false;
+      }
+      await loadProfilesForAdmin();
+      return true;
+    }
+
+    async function login(phone, pass) {
+      const cleanDigits = (phone || '').replace(/[^0-9]/g, '').trim();
+      if (!supabaseClient || !cleanDigits) return { ok: false, msg: 'Serviço de autenticação indisponível.' };
+      const credentials = {
+        email: authEmailForPhone(cleanDigits),
+        password: pass
+      };
+      let { data, error } = await supabaseClient.auth.signInWithPassword(credentials);
+      if (error || !data.user) {
+        // Migração transparente: valida a senha legada somente no Edge Function
+        // e repete o login no Auth, sem recadastro e sem expor a base legada.
+        const { data: migrated, error: migrationError } = await supabaseClient.functions.invoke('legacy-login', {
+          body: { phone: cleanDigits, password: pass }
+        });
+        if (migrationError || !migrated?.migrated) return { ok: false, msg: 'Telefone ou senha incorretos.' };
+        ({ data, error } = await supabaseClient.auth.signInWithPassword(credentials));
+      }
+      if (error || !data.user) return { ok: false, msg: 'Telefone ou senha incorretos.' };
+      const u = await loadCurrentProfile(data.user.id);
+      if (!u) {
+        await supabaseClient.auth.signOut();
+        return { ok: false, msg: 'Perfil de acesso não encontrado. Procure o administrador.' };
+      }
+      if (u.status === 'pendente') {
+        await supabaseClient.auth.signOut();
+        return { ok: false, msg: 'Seu cadastro ainda aguarda aprovação do administrador.' };
+      }
+      if (u.status === 'inativo') {
+        await supabaseClient.auth.signOut();
+        return { ok: false, msg: 'Sua conta está desativada. Fale com o administrador.' };
+      }
+      await loadProfilesForAdmin();
       return { ok: true, user: u };
     }
-    function logout() {
+
+    async function logout() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
       currentUser = null;
+      localStorage.removeItem(KEY('users'));
       showScreen('login');
     }
 
@@ -3087,11 +3148,11 @@
           fallbackWarningHtml = `
         <div style="background:#fef3c7;border:2px solid #d97706;padding:14px 16px;border-radius:12px;margin:12px;color:#78350f;font-size:0.95rem;line-height:1.5">
           <div style="font-weight:800;font-size:1.05rem;color:#b45309;margin-bottom:4px">⚠️ ATENÇÃO: Mudança no Ponto de Apoio!</div>
-          A ${defPoint.name} está indisponível hoje (${effectiveRes.reason || 'imprevisto'}).<br>
-          Seu serviço no <b>${cart.local}</b> está <b>MANTIDO!</b><br>
+          A ${escHtml(defPoint.name)} está indisponível hoje (${escHtml(effectiveRes.reason || 'imprevisto')}).<br>
+          Seu serviço no <b>${escHtml(cart.local)}</b> está <b>MANTIDO!</b><br>
           <div style="margin-top:8px;background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #f59e0b">
-            📍 <b>Retire em:</b> ${effPoint.name} (${effPoint.responsibleName}) — ${effPoint.address}<br>
-            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${effPoint.responsibleName}</a>` : ''}
+            📍 <b>Retire em:</b> ${escHtml(effPoint.name)} (${escHtml(effPoint.responsibleName)}) — ${escHtml(effPoint.address)}<br>
+            ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" style="color:#b45309;font-weight:700">🗺️ Ver Rota até a ${escHtml(effPoint.responsibleName)}</a>` : ''}
           </div>
         </div>
       `;
@@ -3175,8 +3236,8 @@
         
         <div style="background:#fff;border:1px solid var(--gray-300);padding:14px;border-radius:12px;margin-bottom:14px">
           <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin-bottom:4px">📦 ONDE RETIRAR E DEVOLVER:</div>
-          <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${effPoint.name} (Responsável: ${effPoint.responsibleName || 'Irmã'})</div>
-          <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${effPoint.address}</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${escHtml(effPoint.name)} (Responsável: ${escHtml(effPoint.responsibleName || 'Irmã')})</div>
+          <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${escHtml(effPoint.address)}</div>
           <div style="display:flex;gap:8px;margin-top:10px">
             ${effPoint.showRouteButton && effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
           </div>
@@ -3186,7 +3247,7 @@
           <span style="font-size:1.5rem">🛒</span>
           <div>
             <div style="font-size:0.8rem;font-weight:700;color:var(--gray-500);text-transform:uppercase">🛒 O QUE VOU LEVAR:</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--navy)">${eq.name}</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--navy)">${escHtml(eq.name)}</div>
           </div>
         </div>
 
@@ -3843,7 +3904,6 @@
             actions += `<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">🗑️ Excluir</button>`;
             if (u.status === 'ativo') actions += `<button class="btn btn-warning btn-xs" onclick="deactivateUser('${u.id}')">Desativar</button>`;
             if (u.status === 'inativo') actions += `<button class="btn btn-primary btn-xs" onclick="activateUser('${u.id}')">Ativar</button>`;
-            actions += `<button class="btn btn-ghost btn-xs" onclick="resetPassword('${u.id}')">🔑</button>`;
             if (u.perfil === 'publicador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','administrador')" title="Promover a Admin">→🔐</button>`;
             if (u.perfil === 'administrador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','master')" title="Promover a Master">→👑</button><button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','publicador')" title="Rebaixar a Publicador">→👤</button>`;
             if (u.perfil === 'master') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','administrador')" title="Rebaixar a Admin">→🔐</button>`;
@@ -3852,8 +3912,8 @@
         return `<div class="user-item">
       <div class="avatar">${u.nome.charAt(0)}</div>
       <div class="user-info">
-        <div class="user-name">${u.nome}</div>
-        <div class="user-meta">📱 ${u.telefone} · ${statusBadge} ${perfilBadge}</div>
+        <div class="user-name">${escHtml(u.nome)}</div>
+        <div class="user-meta">📱 ${escHtml(u.telefone)} · ${statusBadge} ${perfilBadge}</div>
         <div class="user-meta">${fmtDT(u.dataCadastro)}</div>
       </div>
       <div class="user-actions" style="flex-direction:column;align-items:flex-end;gap:4px">${actions}</div>
@@ -3960,15 +4020,8 @@
         if (adminTab === 'users') renderAdminUsers();
       }
     }
-    async function resetPassword(id) {
-      const users = load('users') || [];
-      const u = users.find(x => x.id === id);
-      const res = await modal({ title: 'Redefinir Senha', desc: `Redefinir senha de <b>${u.nome}</b> para <b>123456</b>?`, actions: [{ label: 'Confirmar', cls: 'btn-warning', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }] });
-      if (!res) return;
-      const idx = users.findIndex(x => x.id === id);
-      users[idx].senha = encPwd('123456');
-      save('users', users);
-      toast(`Senha de ${u.nome} redefinida para: 123456`, 'info', 5000);
+    async function resetPassword() {
+      toast('A redefinição deve ser feita pelo fluxo seguro do Supabase Auth. Nenhuma senha padrão é criada.', 'info', 6000);
     }
     function setRole(id, newPerfil) {
       if (currentUser.perfil !== 'master') { toast('Apenas o Master pode alterar perfis.', 'error'); return; }
@@ -4309,19 +4362,15 @@
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `agenda-carrinho-backup-${todayStr()}.json`; a.click();
     };
-    document.getElementById('btn-admin-change-pass').onclick = () => {
+    document.getElementById('btn-admin-change-pass').onclick = async () => {
       const old = document.getElementById('admin-old-pass').value;
       const n = document.getElementById('admin-new-pass').value;
       const n2 = document.getElementById('admin-new-pass2').value;
       if (!old || !n || !n2) { toast('Preencha todos os campos.', 'error'); return; }
       if (n.length < 6) { toast('A nova senha deve ter pelo menos 6 caracteres.', 'error'); return; }
       if (n !== n2) { toast('As novas senhas não coincidem.', 'error'); return; }
-      if (encPwd(old) !== currentUser.senha) { toast('Senha atual incorreta.', 'error'); return; }
-      const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === currentUser.id);
-      users[idx].senha = encPwd(n);
-      currentUser.senha = encPwd(n);
-      save('users', users);
+      const { error } = await supabaseClient.auth.updateUser({ password: n });
+      if (error) { toast('Não foi possível alterar a senha.', 'error'); return; }
       addLog(currentUser.id, currentUser.nome, 'LOGIN_REALIZADO', 'Senha do administrador alterada');
       toast('Senha alterada com sucesso! 🔐', 'success');
       document.getElementById('admin-old-pass').value = '';
@@ -4343,11 +4392,11 @@
     // EVENT LISTENERS
     // ============================================================
     // Login
-    document.getElementById('btn-login').onclick = () => {
+    document.getElementById('btn-login').onclick = async () => {
       const phone = document.getElementById('login-phone').value.replace(/[^0-9]/g, '').trim();
       const pass = document.getElementById('login-pass').value;
       if (!phone || !pass) { toast('Preencha todos os campos.', 'error'); return; }
-      const r = login(phone, pass);
+      const r = await login(phone, pass);
       if (!r.ok) { toast(r.msg, 'error'); return; }
       // Tela de agendamentos é a HOME para todos
       showScreen('pub');
@@ -4374,47 +4423,9 @@
     };
 
     document.getElementById('btn-search-forgot').onclick = () => {
-      const rawPhone = document.getElementById('forgot-phone').value;
-      const phone = rawPhone.replace(/[^0-9]/g, '').trim();
-      if (!phone) { toast('Digite o seu telefone (WhatsApp).', 'error'); return; }
-
-      const users = load('users') || [];
-      const u = users.find(x => x.telefone === phone || (x.telefone || '').replace(/[^0-9]/g, '').trim() === phone);
-      if (!u) {
-        toast('Nenhuma conta encontrada com este telefone.', 'error');
-        document.getElementById('forgot-result').style.display = 'none';
-        return;
-      }
-
-      const congregacoes = load('congregacoes') || [];
-      const cong = congregacoes.find(c => c.id === u.congregacaoId) || { nome: 'Congregação Boturussu' };
-
-      // Encontrar o administrador da congregação
-      const admin = users.find(x => x.congregacaoId === u.congregacaoId && ['master', 'administrador'].includes(x.perfil));
-      const adminPhone = admin ? admin.telefone : '';
-      const adminName = admin ? admin.nome : 'Administrador';
-
-      document.getElementById('forgot-user-name').textContent = `👤 Conta encontrada: ${u.nome}`;
-      document.getElementById('forgot-cong-name').textContent = `🏛️ ${cong.nome}${admin ? ` • Admin: ${adminName}` : ''}`;
-
-      let cleanAdminPhone = adminPhone.replace(/\D/g, '');
-      if (cleanAdminPhone.length >= 10 && !cleanAdminPhone.startsWith('55')) {
-        cleanAdminPhone = '55' + cleanAdminPhone;
-      }
-
-      const msg = encodeURIComponent(`Olá, ${adminName}! Esqueci minha senha de acesso no app Agenda do Carrinho.\n\n👤 Nome: ${u.nome}\n📱 Telefone: ${u.telefone}\n🏛️ Congregação: ${cong.nome}\n\nPoderia redefinir minha senha para a senha padrão (123456), por favor?`);
-
-      const btnWa = document.getElementById('btn-send-forgot-whatsapp');
-      if (cleanAdminPhone) {
-        btnWa.href = `https://wa.me/${cleanAdminPhone}?text=${msg}`;
-      } else {
-        btnWa.href = `https://api.whatsapp.com/send?text=${msg}`;
-      }
-
-      addLog(u.id, u.nome, 'RECUPERACAO_SENHA_SOLICITADA', `Solicitou redefinição de senha via WhatsApp (${cong.nome})`);
-
-      document.getElementById('forgot-result').style.display = 'block';
-      toast('Conta localizada! Clique no botão abaixo para enviar mensagem ao administrador.', 'success', 5000);
+      // Não consultar usuários por telefone nem revelar se uma conta existe.
+      document.getElementById('forgot-result').style.display = 'none';
+      toast('Por segurança, a senha não é redefinida por WhatsApp. Solicite ao administrador um convite seguro do Supabase Auth.', 'info', 7000);
     };
     document.getElementById('forgot-phone').onkeydown = e => { if (e.key === 'Enter') document.getElementById('btn-search-forgot').click(); };
     function renderCongregacaoOptions() {
@@ -4439,7 +4450,7 @@
       renderCongregacaoOptions();
     };
     document.getElementById('btn-back-login').onclick = () => { document.getElementById('register-form').style.display = 'none'; document.getElementById('login-form').style.display = 'block'; };
-    document.getElementById('btn-register').onclick = () => {
+    document.getElementById('btn-register').onclick = async () => {
       const nome = document.getElementById('reg-name').value.trim();
       const phone = document.getElementById('reg-phone').value.replace(/[^0-9]/g, '').trim();
       const pass = document.getElementById('reg-pass').value;
@@ -4450,24 +4461,9 @@
       if (!/^[0-9]{10,11}$/.test(phone)) { toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).', 'error'); return; }
       if (pass.length < 6) { toast('A senha deve ter pelo menos 6 caracteres.', 'error'); return; }
       if (pass !== pass2) { toast('As senhas não coincidem.', 'error'); return; }
-      const users = load('users') || [];
-      const existingUser = users.find(u => {
-        const uPhone = (u.telefone || '').replace(/[^0-9]/g, '').trim();
-        return uPhone === phone || u.telefone === phone;
-      });
-      if (existingUser) {
-        toast(`Este número de telefone já está cadastrado em outro usuário (${existingUser.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
-        return;
-      }
-
       let congId = congSel;
       let userPerfil = 'publicador';
       let userStatus = 'pendente';
-
-      if (phone === '11920066472') {
-        userPerfil = 'master';
-        userStatus = 'ativo';
-      }
 
       if (congSel === 'new_cong') {
         const newName = document.getElementById('reg-new-cong-name').value.trim();
@@ -4514,14 +4510,28 @@
         });
         save('carts', carts);
 
-        userPerfil = 'administrador';
-        userStatus = 'ativo';
+        // A criação de uma congregação não concede privilégios automaticamente.
+        // Um administrador existente deve aprovar/promover o perfil no servidor.
+        userPerfil = 'publicador';
+        userStatus = 'pendente';
       }
 
-      const u = { id: uuid(), nome, telefone: phone, senha: encPwd(pass), perfil: userPerfil, status: userStatus, congregacaoId: congId, dataCadastro: now() };
-      users.push(u);
-      save('users', users);
-      addLog(u.id, u.nome, 'USUARIO_CADASTRADO', `Cadastrado (${userPerfil})`);
+      if (!supabaseClient) {
+        toast('Serviço de autenticação indisponível.', 'error');
+        return;
+      }
+
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email: authEmailForPhone(phone),
+        password: pass,
+        options: { data: { nome, telefone: phone, congregacao_id: congId } }
+      });
+      if (authError || !authData.user) {
+        toast(authError?.message || 'Não foi possível criar a conta.', 'error', 6000);
+        return;
+      }
+
+      const u = { id: authData.user.id, nome, telefone: phone, perfil: userPerfil, status: userStatus, congregacaoId: congId, dataCadastro: now() };
 
       if (userPerfil === 'administrador') {
         toast('Congregação criada com sucesso! Você é o administrador local. Faça login para acessar.', 'success', 6000);
@@ -4591,19 +4601,15 @@
     };
 
     // Change password
-    document.getElementById('btn-change-pass').onclick = () => {
+    document.getElementById('btn-change-pass').onclick = async () => {
       const old = document.getElementById('chg-old-pass').value;
       const n = document.getElementById('chg-new-pass').value;
       const n2 = document.getElementById('chg-new-pass2').value;
       if (!old || !n || !n2) { toast('Preencha todos os campos.', 'error'); return; }
       if (n.length < 6) { toast('A nova senha deve ter pelo menos 6 caracteres.', 'error'); return; }
       if (n !== n2) { toast('As novas senhas não coincidem.', 'error'); return; }
-      if (encPwd(old) !== currentUser.senha) { toast('Senha atual incorreta.', 'error'); return; }
-      const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === currentUser.id);
-      users[idx].senha = encPwd(n);
-      currentUser.senha = encPwd(n);
-      save('users', users);
+      const { error } = await supabaseClient.auth.updateUser({ password: n });
+      if (error) { toast('Não foi possível alterar a senha.', 'error'); return; }
       toast('Senha alterada com sucesso!', 'success');
       document.getElementById('chg-old-pass').value = '';
       document.getElementById('chg-new-pass').value = '';
@@ -5031,7 +5037,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js?v=25').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=26').then((reg) => {
             console.log('SW registrado com sucesso:', reg.scope);
             reg.update();
           }).catch((err) => {
@@ -5271,9 +5277,9 @@
     <div class="card" style="margin-bottom:12px">
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">🏠 ${sp.name}</div>
-          <div style="font-size:0.85rem;color:var(--gray-600)">Responsável: <b>${sp.responsibleName || '-'}</b> • 📱 ${sp.whatsapp || '-'}</div>
-          <div style="font-size:0.82rem;color:var(--gray-500)">📍 ${sp.address || '-'}</div>
+          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">🏠 ${escHtml(sp.name)}</div>
+          <div style="font-size:0.85rem;color:var(--gray-600)">Responsável: <b>${escHtml(sp.responsibleName || '-')}</b> • 📱 ${escHtml(sp.whatsapp || '-')}</div>
+          <div style="font-size:0.82rem;color:var(--gray-500)">📍 ${escHtml(sp.address || '-')}</div>
           <div style="margin-top:4px">${statusBadge}${routeBadge}</div>
         </div>
         <div style="display:flex;gap:6px">
@@ -5443,8 +5449,8 @@
     <div class="card" style="margin-bottom:12px">
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">📍 ${loc.name}</div>
-          <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${loc.type || 'Local de Serviço'}</b></div>
+          <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">📍 ${escHtml(loc.name)}</div>
+          <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${escHtml(loc.type || 'Local de Serviço')}</b></div>
           <div style="font-size:0.82rem;color:var(--blue);margin-top:2px">📦 Ponto de Apoio: <b>${spLabel}</b></div>
         </div>
         <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
@@ -5645,7 +5651,10 @@
     // ============================================================
     async function initApp() {
       initPWA();
+      const authenticated = await restoreAuth();
       await syncWithSupabase();
+      if (authenticated && currentUser) showScreen('pub');
+      else showScreen('login');
       selectDate(todayStr());
     }
     initApp();

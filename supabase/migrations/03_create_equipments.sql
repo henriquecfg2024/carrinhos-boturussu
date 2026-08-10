@@ -13,5 +13,4 @@ CREATE TABLE IF NOT EXISTS public.equipments (
 ALTER TABLE public.equipments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Leitura publica equipments" ON public.equipments;
 CREATE POLICY "Leitura publica equipments" ON public.equipments FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Escrita admin equipments" ON public.equipments;
-CREATE POLICY "Escrita admin equipments" ON public.equipments FOR ALL USING (true);
+-- Escrita administrativa é criada pela migration 08_auth_hardening.sql.
