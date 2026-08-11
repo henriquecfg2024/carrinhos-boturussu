@@ -3930,7 +3930,7 @@
     const ROLE_LABEL = { 'master': '👑 Master', 'administrador': '🔐 Admin', 'publicador': '👤 Publicador' };
     const ROLE_BADGE = { 'master': 'badge-blue', 'administrador': 'badge-green', 'publicador': 'badge-gray' };
 
-    function initAdminScreen() {
+    async function initAdminScreen() {
       if (!currentUser || !['master', 'administrador'].includes((currentUser.perfil || '').toLowerCase())) {
         toast('Acesso negado.', 'error');
         showScreen('pub');
@@ -3955,6 +3955,9 @@
       const first = allowed[0] || 'dashboard';
       const firstBtn = document.querySelector(`#admin-tabs .tab[data-tab="${first}"]`);
       if (firstBtn) switchAdminTab(first, firstBtn);
+
+      // Garante carregamento dos 35 usuários ao entrar no painel administrativo
+      await loadProfilesForAdmin();
     }
 
     function switchAdminTab(tab, el) {
@@ -3973,7 +3976,10 @@
         if (d) d.style.display = t === tab ? 'block' : 'none';
       });
       if (tab === 'dashboard') renderAdminDashboard();
-      if (tab === 'users') renderAdminUsers();
+      if (tab === 'users') {
+        loadProfilesForAdmin();
+        renderAdminUsers();
+      }
       if (tab === 'schedule') renderAdminSchedule();
       if (tab === 'imprevisto') renderAdminImprevisto();
       if (tab === 'support_points') renderAdminSupportPoints();
