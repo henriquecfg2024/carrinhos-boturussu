@@ -2777,12 +2777,41 @@
 
     async function loadProfilesForAdmin() {
       if (!supabaseClient || !isPrivilegedUser()) return;
-      const { data, error } = await supabaseClient.from('profiles').select('*');
-      if (error) {
-        console.error('Falha ao carregar perfis:', error.message);
-        return;
-      }
-      saveLocalOnly('users', (data || []).map(profileToLegacyUser));
+      let profilesList = [];
+      let legacyUsersList = [];
+
+      try {
+        const { data } = await supabaseClient.from('profiles').select('*');
+        if (data) profilesList = data.map(profileToLegacyUser);
+      } catch (e) { }
+
+      try {
+        const { data } = await supabaseClient.from('app_store').select('data').eq('key', 'users').maybeSingle();
+        if (data && Array.isArray(data.data)) {
+          legacyUsersList = data.data.map(u => ({
+            id: u.id || uuid(),
+            nome: u.nome || 'Usuário',
+            telefone: String(u.telefone || ''),
+            perfil: u.perfil || u.role || 'publicador',
+            status: u.status || 'ativo',
+            congregacaoId: u.congregacaoId || 'boturussu',
+            dataCadastro: u.criadoEm || u.dataCadastro || now()
+          }));
+        }
+      } catch (e) { }
+
+      const mergedMap = new Map();
+      legacyUsersList.forEach(u => {
+        const cleanPhone = String(u.telefone || '').replace(/[^0-9]/g, '');
+        if (cleanPhone) mergedMap.set(cleanPhone, u);
+      });
+      profilesList.forEach(p => {
+        const cleanPhone = String(p.telefone || '').replace(/[^0-9]/g, '');
+        if (cleanPhone) mergedMap.set(cleanPhone, p);
+      });
+
+      const combined = Array.from(mergedMap.values());
+      saveLocalOnly('users', combined.length ? combined : profilesList);
     }
 
     async function restoreAuth() {

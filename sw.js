@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenda-carrinho-v27-auth-fix';
+const CACHE_NAME = 'agenda-carrinho-v28-all-users';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
