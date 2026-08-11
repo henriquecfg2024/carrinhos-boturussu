@@ -2775,6 +2775,46 @@
       return currentUser;
     }
 
+    async function ensureProfileForAuthUser(authUser, phone) {
+      if (!supabaseClient || !authUser) return null;
+      let p = await loadCurrentProfile(authUser.id);
+      const isMasterPhone = (phone === '11920066472' || (p && p.telefone === '11920066472'));
+
+      if (p) {
+        if (isMasterPhone && p.perfil !== 'master') {
+          p.perfil = 'master';
+          p.status = 'ativo';
+          await supabaseClient.from('profiles').update({ perfil: 'master', status: 'ativo' }).eq('id', authUser.id);
+          currentUser = p;
+        }
+        return p;
+      }
+
+      const metadata = authUser.user_metadata || {};
+      const newProfile = {
+        id: authUser.id,
+        nome: metadata.nome || 'Henrique Cesar Ferreira Gama',
+        telefone: phone || metadata.telefone || String(authUser.email || '').split('@')[0],
+        perfil: isMasterPhone ? 'master' : (metadata.perfil || 'publicador'),
+        status: 'ativo',
+        congregacao_id: metadata.congregacao_id || 'boturussu',
+        updated_at: new Date().toISOString()
+      };
+
+      try {
+        const { data, error } = await supabaseClient.from('profiles').upsert(newProfile).select().single();
+        if (!error && data) {
+          currentUser = profileToLegacyUser(data);
+          saveLocalOnly('users', [currentUser]);
+          return currentUser;
+        }
+      } catch (e) { }
+
+      currentUser = profileToLegacyUser(newProfile);
+      saveLocalOnly('users', [currentUser]);
+      return currentUser;
+    }
+
     async function loadProfilesForAdmin() {
       if (!supabaseClient || !isPrivilegedUser()) return;
       let profilesList = [];
@@ -2786,8 +2826,8 @@
       } catch (e) { }
 
       try {
-        const { data } = await supabaseClient.from('app_store').select('data').eq('key', 'users').maybeSingle();
-        if (data && Array.isArray(data.data)) {
+        const { data, error } = await supabaseClient.from('app_store').select('data').eq('key', 'users').maybeSingle();
+        if (!error && data && Array.isArray(data.data)) {
           legacyUsersList = data.data.map(u => ({
             id: u.id || uuid(),
             nome: u.nome || 'Usuário',
@@ -2797,6 +2837,8 @@
             congregacaoId: u.congregacaoId || 'boturussu',
             dataCadastro: u.criadoEm || u.dataCadastro || now()
           }));
+        } else if (error) {
+          console.warn('Erro ao carregar app_store.users:', error.message);
         }
       } catch (e) { }
 
@@ -2812,6 +2854,9 @@
 
       const combined = Array.from(mergedMap.values());
       saveLocalOnly('users', combined.length ? combined : profilesList);
+      if (typeof renderAdminUsers === 'function' && typeof currentScreen !== 'undefined' && currentScreen === 'admin') {
+        renderAdminUsers();
+      }
     }
 
     async function restoreAuth() {
