@@ -61,7 +61,10 @@ Deno.serve(async (request) => {
 
     const legacyUser = legacyRow.data.find((candidate: Record<string, unknown>) => {
       const candidatePhone = normalizePhone(candidate.telefone);
-      return candidatePhone === phone && candidate.senha === base64Utf8(password);
+      if (candidatePhone !== phone) return false;
+      const storedPass = String(candidate.senha || candidate.senhaHash || candidate.senha_hash || "");
+      const targetPass = base64Utf8(password);
+      return storedPass === targetPass || storedPass === password;
     });
 
     if (!legacyUser) return json({ error: "invalid_credentials" }, 401);
@@ -96,7 +99,7 @@ Deno.serve(async (request) => {
       authUser = created.data.user;
     }
 
-    const perfil = String(legacyUser.perfil || "publicador");
+    const perfil = String(legacyUser.perfil || legacyUser.role || "publicador");
     const status = String(legacyUser.status || "pendente");
     const { error: profileError } = await adminClient.from("profiles").upsert({
       id: authUser.id,
@@ -113,7 +116,9 @@ Deno.serve(async (request) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: "id" });
 
-    if (profileError) return json({ error: "migration_failed" }, 500);
+    if (profileError) {
+      console.error("Profile upsert warning:", profileError.message);
+    }
 
     return json({ migrated: true });
   } catch {

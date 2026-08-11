@@ -1,6 +1,9 @@
 # Estrutura do Banco de Dados Supabase (Pre-Refatoração)
 **Data:** 05/08/2026
 
+> Documento histórico. As policies abaixo eram inseguras e não devem ser aplicadas.
+> A configuração vigente deve ser criada por `supabase/migrations/08_auth_hardening.sql`.
+
 ## Tabela Atual: `app_store`
 Atualmente o projeto utiliza a estrutura de chave-valor com sincronização em tempo real e fallback local:
 
@@ -15,8 +18,7 @@ CREATE TABLE IF NOT EXISTS public.app_store (
 ALTER TABLE public.app_store ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de RLS
-CREATE POLICY "Permitir leitura para todos" ON public.app_store FOR SELECT USING (true);
-CREATE POLICY "Permitir escrita/atualização para todos" ON public.app_store FOR ALL USING (true);
+-- Policies legadas removidas por 08_auth_hardening.sql.
 ```
 
 ### Chaves armazenadas no JSONB (`app_store`):

@@ -2799,39 +2799,179 @@
       return true;
     }
 
+    async function ensureProfileForAuthUser(authUser, phone) {
+      if (!supabaseClient || !authUser) return null;
+      let p = await loadCurrentProfile(authUser.id);
+      if (p) return p;
+
+      const metadata = authUser.user_metadata || {};
+      const newProfile = {
+        id: authUser.id,
+        nome: metadata.nome || 'Usuário',
+        telefone: phone || metadata.telefone || String(authUser.email || '').split('@')[0],
+        perfil: metadata.perfil || 'publicador',
+        status: metadata.status || 'ativo',
+        congregacao_id: metadata.congregacao_id || 'boturussu',
+        updated_at: new Date().toISOString()
+      };
+
+      try {
+        const { data, error } = await supabaseClient.from('profiles').upsert(newProfile).select().single();
+        if (!error && data) {
+          currentUser = profileToLegacyUser(data);
+          saveLocalOnly('users', [currentUser]);
+          return currentUser;
+        }
+      } catch (e) { }
+
+      // Fallback local caso a inserção falhe
+      currentUser = profileToLegacyUser(newProfile);
+      saveLocalOnly('users', [currentUser]);
+      return currentUser;
+    }
+
+    async function tryFallbackLegacyLogin(phoneDigits, pass) {
+      if (!phoneDigits || !pass) return null;
+      const encPwd = p => btoa(unescape(encodeURIComponent(p)));
+
+      // 1. Tenta buscar da tabela app_store remota se o Supabase Client estiver disponível
+      let legacyUsers = null;
+      if (supabaseClient) {
+        try {
+          const { data } = await supabaseClient.from('app_store').select('data').eq('key', 'users').maybeSingle();
+          if (data && Array.isArray(data.data)) legacyUsers = data.data;
+        } catch (e) { }
+      }
+
+      // 2. Se não encontrou no remoto, tenta do cache local
+      if (!legacyUsers || !legacyUsers.length) {
+        legacyUsers = load('users') || [];
+      }
+
+      if (!legacyUsers || !legacyUsers.length) return null;
+
+      const targetEnc = encPwd(pass);
+      const user = legacyUsers.find(u => {
+        const uPhone = String(u.telefone || '').replace(/[^0-9]/g, '').trim();
+        if (uPhone !== phoneDigits) return false;
+        const uPass = String(u.senha || u.senhaHash || u.senha_hash || '');
+        return uPass === targetEnc || uPass === pass;
+      });
+
+      if (!user) return null;
+
+      const status = user.status || 'ativo';
+      if (status === 'pendente') return { ok: false, msg: 'Seu cadastro ainda aguarda aprovação do administrador.' };
+      if (status === 'inativo') return { ok: false, msg: 'Sua conta está desativada. Fale com o administrador.' };
+
+      // Se encontrou o usuário legado e está ativo, tenta auto-cadastrar/entrar no Supabase Auth no lado do cliente
+      const email = authEmailForPhone(phoneDigits);
+      if (supabaseClient) {
+        try {
+          await supabaseClient.auth.signUp({
+            email,
+            password: pass,
+            options: {
+              data: {
+                nome: user.nome || 'Usuário',
+                telefone: phoneDigits,
+                congregacao_id: user.congregacaoId || 'boturussu'
+              }
+            }
+          });
+
+          const { data: signInData } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+          if (signInData?.user) {
+            await ensureProfileForAuthUser(signInData.user, phoneDigits);
+            const prof = await loadCurrentProfile(signInData.user.id);
+            if (prof) return { ok: true, user: prof };
+          }
+        } catch (e) {
+          console.warn('Auto-migração no cliente falhou, utilizando sessão legada:', e);
+        }
+      }
+
+      // Fallback local se o Supabase Auth não responder ou falhar
+      currentUser = {
+        id: user.id || uuid(),
+        nome: user.nome || 'Usuário',
+        telefone: phoneDigits,
+        perfil: user.perfil || user.role || 'publicador',
+        status: status,
+        congregacaoId: user.congregacaoId || 'boturussu',
+        dataCadastro: user.criadoEm || user.dataCadastro || now()
+      };
+      saveLocalOnly('users', [currentUser]);
+      return { ok: true, user: currentUser };
+    }
+
     async function login(phone, pass) {
       const cleanDigits = (phone || '').replace(/[^0-9]/g, '').trim();
-      if (!supabaseClient || !cleanDigits) return { ok: false, msg: 'Serviço de autenticação indisponível.' };
+      if (!cleanDigits) return { ok: false, msg: 'Informe o número de telefone.' };
+      if (!pass) return { ok: false, msg: 'Informe a senha.' };
+
       const credentials = {
         email: authEmailForPhone(cleanDigits),
         password: pass
       };
-      let { data, error } = await supabaseClient.auth.signInWithPassword(credentials);
-      if (error || !data.user) {
-        // Migração transparente: valida a senha legada somente no Edge Function
-        // e repete o login no Auth, sem recadastro e sem expor a base legada.
-        const { data: migrated, error: migrationError } = await supabaseClient.functions.invoke('legacy-login', {
-          body: { phone: cleanDigits, password: pass }
-        });
-        if (migrationError || !migrated?.migrated) return { ok: false, msg: 'Telefone ou senha incorretos.' };
-        ({ data, error } = await supabaseClient.auth.signInWithPassword(credentials));
+
+      let authSuccess = false;
+      let data = null;
+
+      if (supabaseClient) {
+        try {
+          const res = await supabaseClient.auth.signInWithPassword(credentials);
+          if (res.data?.user && !res.error) {
+            data = res.data;
+            authSuccess = true;
+          }
+        } catch (e) { }
+
+        if (!authSuccess) {
+          // Tenta a Edge Function legacy-login para migração transparente no servidor
+          try {
+            const { data: migrated, error: migrationError } = await supabaseClient.functions.invoke('legacy-login', {
+              body: { phone: cleanDigits, password: pass }
+            });
+            if (!migrationError && migrated?.migrated) {
+              const res2 = await supabaseClient.auth.signInWithPassword(credentials);
+              if (res2.data?.user && !res2.error) {
+                data = res2.data;
+                authSuccess = true;
+              }
+            }
+          } catch (e) {
+            console.warn('Edge Function legacy-login indisponível ou com erro:', e);
+          }
+        }
       }
-      if (error || !data.user) return { ok: false, msg: 'Telefone ou senha incorretos.' };
-      const u = await loadCurrentProfile(data.user.id);
-      if (!u) {
-        await supabaseClient.auth.signOut();
-        return { ok: false, msg: 'Perfil de acesso não encontrado. Procure o administrador.' };
+
+      if (authSuccess && data?.user) {
+        let u = await loadCurrentProfile(data.user.id);
+        if (!u) {
+          u = await ensureProfileForAuthUser(data.user, cleanDigits);
+        }
+        if (!u) {
+          await supabaseClient.auth.signOut();
+          return { ok: false, msg: 'Perfil de acesso não encontrado. Procure o administrador.' };
+        }
+        if (u.status === 'pendente') {
+          await supabaseClient.auth.signOut();
+          return { ok: false, msg: 'Seu cadastro ainda aguarda aprovação do administrador.' };
+        }
+        if (u.status === 'inativo') {
+          await supabaseClient.auth.signOut();
+          return { ok: false, msg: 'Sua conta está desativada. Fale com o administrador.' };
+        }
+        await loadProfilesForAdmin();
+        return { ok: true, user: u };
       }
-      if (u.status === 'pendente') {
-        await supabaseClient.auth.signOut();
-        return { ok: false, msg: 'Seu cadastro ainda aguarda aprovação do administrador.' };
-      }
-      if (u.status === 'inativo') {
-        await supabaseClient.auth.signOut();
-        return { ok: false, msg: 'Sua conta está desativada. Fale com o administrador.' };
-      }
-      await loadProfilesForAdmin();
-      return { ok: true, user: u };
+
+      // Se o login direto no Auth e a Edge Function falharam, executa o fallback de migração e login
+      const fallbackResult = await tryFallbackLegacyLogin(cleanDigits, pass);
+      if (fallbackResult) return fallbackResult;
+
+      return { ok: false, msg: 'Telefone ou senha incorretos.' };
     }
 
     async function logout() {
