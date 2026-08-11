@@ -3401,7 +3401,7 @@
           if (filterOnlyNeeded && !needsPartner) return;
 
           const inWaiting = waiting.find(w => w.usuarioId === currentUser.id && w.carrinhoId === cart.id && w.data === selectedDate && w.turno === turno);
-          const names = slotBookings.map(b => b.usuarioNome.split(' ')[0]).join(', ') || 'Nenhum confirmado';
+          const names = slotBookings.map(b => b.usuarioNome.split(' ').slice(0, 2).join(' ')).join(', ') || 'Nenhum confirmado';
 
           const slotDateTime = new Date(selectedDate + 'T' + turno.split('-')[0] + ':00');
           const diffH = (slotDateTime - new Date()) / 3600000;
@@ -3525,7 +3525,7 @@
       if (myActive.length >= maxLimit) { toast(`Você já atingiu o limite máximo de ${maxLimit} agendamentos futuros.`, 'error'); return; }
 
 
-      const b = { id: uuid(), usuarioId: currentUser.id, usuarioNome: currentUser.nome, carrinhoId: cartId, carrinhoNome: cart.nome + ' — ' + cart.local, data: date, turno, status: 'agendado', checkInHora: null, checkOutHora: null, criadoEm: now() };
+      const b = { id: uuid(), usuarioId: currentUser.id, usuarioNome: currentUser.nome, usuarioTelefone: currentUser.telefone, carrinhoId: cartId, carrinhoNome: cart.nome + ' — ' + cart.local, data: date, turno, status: 'agendado', checkInHora: null, checkOutHora: null, criadoEm: now(), congregacaoId: getCongregacaoId() };
       bookings.push(b);
       save('bookings', bookings);
       addLog(currentUser.id, currentUser.nome, 'AGENDAMENTO_CRIADO', `Agendado: ${cart.nome} — ${cart.local}, ${turno}, ${fmtD(date)}`);
@@ -4349,7 +4349,7 @@
       const slot = bookings.filter(b => b.carrinhoId === cid && b.data === date && b.turno === turno && b.status !== 'cancelado');
       if (slot.length >= cart.capMax) { toast('Turno lotado.', 'error'); return; }
       if (slot.find(b => b.usuarioId === uid)) { toast('Usuário já agendado neste turno.', 'error'); return; }
-      const b = { id: uuid(), usuarioId: uid, usuarioNome: user.nome, carrinhoId: cid, carrinhoNome: cart.nome + ' — ' + cart.local, data: date, turno, status: 'agendado', checkInHora: null, checkOutHora: null, criadoEm: now() };
+      const b = { id: uuid(), usuarioId: uid, usuarioNome: user.nome, usuarioTelefone: user.telefone, carrinhoId: cid, carrinhoNome: cart.nome + ' — ' + cart.local, data: date, turno, status: 'agendado', checkInHora: null, checkOutHora: null, criadoEm: now(), congregacaoId: getCongregacaoId() };
       bookings.push(b);
       save('bookings', bookings);
       addLog(currentUser.id, currentUser.nome, 'AGENDAMENTO_CRIADO', `Admin criou agendamento: ${user.nome}, ${cart.nome} — ${cart.local}, ${turno}, ${fmtD(date)}`);
@@ -4449,7 +4449,7 @@
             const slotBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === ds && b.turno === turno && b.status !== 'cancelado');
             const count = slotBookings.length;
             if (count > 0 && count < cart.capMin) {
-              neededList.push({ cart, data: ds, turno, names: slotBookings.map(b => b.usuarioNome.split(' ')[0]).join(', '), missing: cart.capMin - count });
+              neededList.push({ cart, data: ds, turno, names: slotBookings.map(b => b.usuarioNome.split(' ').slice(0, 2).join(' ')).join(', '), missing: cart.capMin - count });
             }
           });
         });
@@ -4500,7 +4500,7 @@
             turnos.forEach(turno => {
               const sl = dayBookings.filter(b => b.turno === turno);
               if (sl.length) {
-                const names = sl.map(b => b.usuarioNome.split(' ')[0]).join(', ');
+                const names = sl.map(b => b.usuarioNome.split(' ').slice(0, 2).join(' ')).join(', ');
                 const warn = sl.length < cart.capMin ? ` ⚠️ falta ${cart.capMin - sl.length}` : '';
                 txt += `  🕐 ${turno}: ${names}${warn}\n`;
               }
