@@ -1,0 +1,10 @@
+# Local and historical backups must never be published or committed.
+/backups/
+/index (1).html
+/sw (1).js
+
+# Local Supabase artifacts and secrets
+.env
+.env.*
+!.env.example
+supabase/.temp/
