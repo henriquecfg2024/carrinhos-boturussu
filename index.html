@@ -2806,7 +2806,7 @@
         nome: metadata.nome || 'Henrique Cesar Ferreira Gama',
         telefone: phone || metadata.telefone || String(authUser.email || '').split('@')[0],
         perfil: isMasterPhone ? 'master' : (metadata.perfil || 'publicador'),
-        status: 'ativo',
+        status: 'pendente',
         congregacao_id: metadata.congregacao_id || 'boturussu',
         updated_at: new Date().toISOString()
       };
@@ -2905,7 +2905,7 @@
         nome: metadata.nome || 'Usuário',
         telefone: phone || metadata.telefone || String(authUser.email || '').split('@')[0],
         perfil: metadata.perfil || 'publicador',
-        status: metadata.status || 'ativo',
+        status: metadata.status || 'pendente',
         congregacao_id: metadata.congregacao_id || 'boturussu',
         updated_at: new Date().toISOString()
       };
@@ -4789,6 +4789,9 @@
         toast('Conta criada, mas não foi possível enviar para aprovação. Fale com o administrador.', 'error', 8000);
         return;
       }
+
+      // O cadastro não concede acesso imediato; o administrador precisa aprovar.
+      await supabaseClient.auth.signOut();
 
       const u = { id: authData.user.id, nome, telefone: phone, perfil: userPerfil, status: 'pendente', congregacaoId: congId, dataCadastro: now() };
 
