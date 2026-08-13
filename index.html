@@ -4690,6 +4690,10 @@
     };
     document.getElementById('btn-back-login').onclick = () => { document.getElementById('register-form').style.display = 'none'; document.getElementById('login-form').style.display = 'block'; };
     document.getElementById('btn-register').onclick = async () => {
+      const registerButton = document.getElementById('btn-register');
+      if (registerButton.disabled) return;
+      registerButton.disabled = true;
+      try {
       const nome = document.getElementById('reg-name').value.trim();
       const phone = document.getElementById('reg-phone').value.replace(/[^0-9]/g, '').trim();
       const pass = document.getElementById('reg-pass').value;
@@ -4770,7 +4774,23 @@
         return;
       }
 
-      const u = { id: authData.user.id, nome, telefone: phone, perfil: userPerfil, status: userStatus, congregacaoId: congId, dataCadastro: now() };
+      // Garante a fila de aprovação mesmo sem depender exclusivamente do trigger.
+      const { error: profileError } = await supabaseClient.from('profiles').upsert({
+        id: authData.user.id,
+        nome,
+        telefone: phone,
+        perfil: 'publicador',
+        status: 'pendente',
+        congregacao_id: congId,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+      if (profileError) {
+        console.error('Falha ao criar perfil pendente:', profileError.message);
+        toast('Conta criada, mas não foi possível enviar para aprovação. Fale com o administrador.', 'error', 8000);
+        return;
+      }
+
+      const u = { id: authData.user.id, nome, telefone: phone, perfil: userPerfil, status: 'pendente', congregacaoId: congId, dataCadastro: now() };
 
       if (userPerfil === 'administrador') {
         toast('Congregação criada com sucesso! Você é o administrador local. Faça login para acessar.', 'success', 6000);
@@ -4784,6 +4804,9 @@
       document.getElementById('reg-phone').value = '';
       document.getElementById('reg-pass').value = '';
       document.getElementById('reg-pass2').value = '';
+      } finally {
+        registerButton.disabled = false;
+      }
     };
     // Logout
     document.getElementById('btn-logout-pub').onclick = logout;
