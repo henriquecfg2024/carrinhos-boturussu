@@ -2195,6 +2195,15 @@
       <div class="content scroll-top" style="padding-bottom:24px">
         <!-- Modo Imprevisto -->
         <div id="admin-imprevisto" style="display:none">
+          <div class="card" style="border:1px solid var(--yellow);margin-bottom:16px">
+            <div class="card-header" style="background:var(--yellow-light);color:var(--yellow)">
+              <span style="font-size:1.4rem">🔑</span>
+              <h3>Solicitações de Reset de Senha</h3>
+            </div>
+            <div class="card-body">
+              <div id="admin-reset-requests-imprevisto"></div>
+            </div>
+          </div>
           <div class="card" style="border:2px solid var(--red);margin-bottom:16px">
             <div class="card-header" style="background:var(--red-light);color:var(--red)">
               <span style="font-size:1.4rem">🚨</span>
@@ -2266,6 +2275,8 @@
           <div class="stats-row" id="admin-stats"></div>
           <div class="section-title">⚠️ Alertas</div>
           <div id="admin-alerts"></div>
+          <div class="section-title">🔑 Solicitações de Reset de Senha</div>
+          <div id="admin-reset-requests-dashboard"></div>
           <div class="section-title">📅 Agendamentos Hoje</div>
           <div id="admin-today"></div>
           <div class="section-title">🕐 Aguardando Aprovação</div>
@@ -2490,11 +2501,16 @@
     }
 
     const uuid = () => ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    const normalizePhone = value => String(value ?? '').replace(/[^0-9]/g, '').trim();
+    const escapeHtml = str => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const escHtml = escapeHtml;
+    const jsArg = value => escapeHtml(JSON.stringify(String(value ?? '')));
+    const firstInitial = value => escapeHtml((String(value || '').trim().charAt(0) || '?').toUpperCase());
     // Senhas nunca são processadas ou armazenadas pelo frontend.
-    const authEmailForPhone = phone => `${String(phone || '').replace(/[^0-9]/g, '')}@auth.app-carrinho.local`;
+    const authEmailForPhone = phone => `${normalizePhone(phone)}@auth.app-carrinho.local`;
     const isPrivilegedUser = () => {
       if (!currentUser) return false;
-      const cleanPhone = String(currentUser.telefone || '').replace(/[^0-9]/g, '');
+      const cleanPhone = normalizePhone(currentUser.telefone);
       if (cleanPhone === '11920066472' || currentUser.telefone === 'admin') return true;
       return ['master', 'administrador'].includes((currentUser.perfil || '').toLowerCase());
     };
@@ -2505,12 +2521,11 @@
         (currentUser.authId && (k === `report_${currentUser.authId}` || k === `report_cfg_${currentUser.authId}`))
       )
     );
-    const escHtml = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const fmtDT = s => { if (!s) return '-'; const d = new Date(s); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
     const fmtD = s => { if (!s) return '-'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
     const profileToLegacyUser = p => {
       if (!p) return null;
-      const cleanPhone = String(p.telefone || '').replace(/[^0-9]/g, '');
+      const cleanPhone = normalizePhone(p.telefone);
       const isMaster = (cleanPhone === '11920066472' || p.telefone === 'admin' || p.perfil === 'master');
       return {
         id: p.legacy_id || p.id,
@@ -2721,14 +2736,14 @@
       CHECKIN_REALIZADO: '🟢', CHECKOUT_REALIZADO: '⚫',
       LISTA_ESPERA_ENTRADA: '⏳', LISTA_ESPERA_SAIDA: '🚫', LISTA_ESPERA_PROMOVIDO: '🎉',
       USUARIO_CADASTRADO: '👤', USUARIO_APROVADO: '✔️', USUARIO_DESATIVADO: '🔒', LOGIN_REALIZADO: '🔐',
-      RECUPERACAO_SENHA_SOLICITADA: '🔑'
+      RECUPERACAO_SENHA_SOLICITADA: '🔑', RECUPERACAO_SENHA_CONCLUIDA: '🔐'
     };
     const LOG_COLORS = {
       AGENDAMENTO_CRIADO: 'var(--green-light)', AGENDAMENTO_CANCELADO: 'var(--red-light)',
       CHECKIN_REALIZADO: 'var(--green-light)', CHECKOUT_REALIZADO: 'var(--gray-100)',
       LISTA_ESPERA_ENTRADA: 'var(--yellow-light)', LISTA_ESPERA_SAIDA: 'var(--gray-100)', LISTA_ESPERA_PROMOVIDO: 'var(--blue-pale)',
       USUARIO_CADASTRADO: 'var(--blue-pale)', USUARIO_APROVADO: 'var(--green-light)', USUARIO_DESATIVADO: 'var(--red-light)', LOGIN_REALIZADO: 'var(--blue-pale)',
-      RECUPERACAO_SENHA_SOLICITADA: 'var(--yellow-light)'
+      RECUPERACAO_SENHA_SOLICITADA: 'var(--yellow-light)', RECUPERACAO_SENHA_CONCLUIDA: 'var(--green-light)'
     };
 
     // ============================================================
@@ -2865,11 +2880,11 @@
 
       const mergedMap = new Map();
       legacyUsersList.forEach(u => {
-        const cleanPhone = String(u.telefone || '').replace(/[^0-9]/g, '');
+        const cleanPhone = normalizePhone(u.telefone);
         if (cleanPhone) mergedMap.set(cleanPhone, u);
       });
       profilesList.forEach(p => {
-        const cleanPhone = String(p.telefone || '').replace(/[^0-9]/g, '');
+        const cleanPhone = normalizePhone(p.telefone);
         if (cleanPhone) mergedMap.set(cleanPhone, p);
       });
 
@@ -2891,6 +2906,7 @@
         return false;
       }
       await loadProfilesForAdmin();
+      await refreshPasswordResetRequests();
       return true;
     }
 
@@ -3920,6 +3936,7 @@
     const LOG_PER_PAGE = 20;
     let logFilter = '';
     let userFilter = 'all';
+    let passwordResetRequests = [];
 
     // Permissões por perfil
     const ROLE_TABS = {
@@ -3948,7 +3965,7 @@
       // Fill cart dropdown
       const carts = load('carts') || [];
       const sel = document.getElementById('admin-sch-cart');
-      if (sel) sel.innerHTML = '<option value="">Todos os carrinhos</option>' + carts.map(c => `<option value="${c.id}">${c.nome} — ${c.local}</option>`).join('');
+      if (sel) sel.innerHTML = '<option value="">Todos os carrinhos</option>' + carts.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nome)} — ${escapeHtml(c.local)}</option>`).join('');
       const schDate = document.getElementById('admin-sch-date');
       if (schDate) schDate.value = todayStr();
       // Go to first allowed tab
@@ -3958,6 +3975,7 @@
 
       // Garante carregamento dos 35 usuários ao entrar no painel administrativo
       await loadProfilesForAdmin();
+      await refreshPasswordResetRequests();
     }
 
     function switchAdminTab(tab, el) {
@@ -3975,19 +3993,88 @@
         const d = document.getElementById(`admin-${t}`);
         if (d) d.style.display = t === tab ? 'block' : 'none';
       });
-      if (tab === 'dashboard') renderAdminDashboard();
+      if (tab === 'dashboard') {
+        renderAdminDashboard();
+        refreshPasswordResetRequests();
+      }
       if (tab === 'users') {
         loadProfilesForAdmin();
         renderAdminUsers();
       }
       if (tab === 'schedule') renderAdminSchedule();
-      if (tab === 'imprevisto') renderAdminImprevisto();
+      if (tab === 'imprevisto') {
+        renderAdminImprevisto();
+        refreshPasswordResetRequests();
+      }
       if (tab === 'support_points') renderAdminSupportPoints();
       if (tab === 'locations') renderAdminLocations();
       if (tab === 'equipments') renderAdminEquipments();
       if (tab === 'logs') renderLogs();
       if (tab === 'reports') renderReports();
       if (tab === 'config') renderConfig();
+    }
+
+    async function loadPasswordResetRequests() {
+      if (!supabaseClient || !isPrivilegedUser()) {
+        passwordResetRequests = [];
+        return passwordResetRequests;
+      }
+
+      const { data, error } = await supabaseClient
+        .from('password_reset_requests')
+        .select('id, telefone, telefone_normalizado, status, created_at, concluido_at, concluido_por')
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Falha ao carregar solicitacoes de reset:', error.message);
+        passwordResetRequests = [];
+        return passwordResetRequests;
+      }
+
+      passwordResetRequests = Array.isArray(data) ? data : [];
+      return passwordResetRequests;
+    }
+
+    function renderPasswordResetRequestsPanels() {
+      renderPasswordResetRequests('admin-reset-requests-dashboard');
+      renderPasswordResetRequests('admin-reset-requests-imprevisto');
+    }
+
+    async function refreshPasswordResetRequests() {
+      await loadPasswordResetRequests();
+      renderPasswordResetRequestsPanels();
+    }
+
+    function renderPasswordResetRequests(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      if (!passwordResetRequests.length) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:.85rem">Nenhuma solicitação pendente</p>';
+        return;
+      }
+
+      const users = load('users') || [];
+      container.innerHTML = passwordResetRequests.map(req => {
+        const phone = normalizePhone(req.telefone_normalizado || req.telefone);
+        const user = users.find(u => normalizePhone(u.telefone) === phone);
+        const rawDisplayName = user?.nome || 'Publicador';
+        const displayName = escapeHtml(rawDisplayName);
+        const phoneHtml = escapeHtml(phone || req.telefone || '');
+        const createdAt = escapeHtml(fmtDT(req.created_at));
+
+        return `<div class="user-item">
+      <div class="avatar">${firstInitial(rawDisplayName)}</div>
+      <div class="user-info">
+        <div class="user-name">${displayName}</div>
+        <div class="user-meta">📱 ${phoneHtml} · ${createdAt}</div>
+      </div>
+      <div class="user-actions" style="flex-direction:column;align-items:flex-end;gap:4px">
+        <button class="btn btn-warning btn-xs" onclick="abrirModalResetPorTelefone(${jsArg(phone)})">🔑 Resetar Senha</button>
+      </div>
+    </div>`;
+      }).join('');
     }
 
     // --- DASHBOARD ---
@@ -4018,8 +4105,8 @@
         recentForgotLogs.forEach(lastForgot => {
           const identifier = lastForgot.id || lastForgot.timestamp || lastForgot.usuarioNome || 'all';
           alerts += `<div class="alert-item" style="border-left-color:var(--yellow);display:flex;align-items:center;justify-content:space-between">
-        <span>🔑 <b>Solicitação de Senha:</b> ${lastForgot.usuarioNome} (${fmtDT(lastForgot.timestamp)})</span>
-        <button type="button" class="btn-pwa-close" onclick="dismissForgotAlert('${identifier}', event)" title="Dispensar alerta" style="background:var(--gray-200);color:var(--gray-700);width:24px;height:24px;font-size:0.85rem;margin-left:8px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">✕</button>
+        <span>🔑 <b>Solicitação de Senha:</b> ${escapeHtml(lastForgot.usuarioNome)} (${escapeHtml(fmtDT(lastForgot.timestamp))})</span>
+        <button type="button" class="btn-pwa-close" onclick="dismissForgotAlert(${jsArg(identifier)}, event)" title="Dispensar alerta" style="background:var(--gray-200);color:var(--gray-700);width:24px;height:24px;font-size:0.85rem;margin-left:8px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">✕</button>
       </div>`;
         });
       }
@@ -4052,10 +4139,10 @@
       // Today bookings
       const todayHtml = todayB.length ? todayB.map(b => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-      <div class="avatar" style="width:32px;height:32px;font-size:.75rem">${b.usuarioNome.charAt(0)}</div>
+      <div class="avatar" style="width:32px;height:32px;font-size:.75rem">${firstInitial(b.usuarioNome)}</div>
       <div style="flex:1">
-        <div style="font-size:.85rem;font-weight:600">${b.usuarioNome}</div>
-        <div style="font-size:.75rem;color:var(--gray-400)">${b.carrinhoNome} — ${b.turno}</div>
+        <div style="font-size:.85rem;font-weight:600">${escapeHtml(b.usuarioNome)}</div>
+        <div style="font-size:.75rem;color:var(--gray-400)">${escapeHtml(b.carrinhoNome)} — ${escapeHtml(b.turno)}</div>
       </div>
       ${b.status === 'agendado' ? '<span class="badge badge-blue">🔵</span>' : b.status === 'presente' ? '<span class="badge badge-green">🟢</span>' : '<span class="badge badge-gray">⚫</span>'}
     </div>`).join('')
@@ -4064,18 +4151,19 @@
       // Pending users
       const pendingHtml = pending.length ? pending.map(u => `
     <div class="user-item">
-      <div class="avatar">${u.nome.charAt(0)}</div>
+      <div class="avatar">${firstInitial(u.nome)}</div>
       <div class="user-info">
-        <div class="user-name">${u.nome}</div>
-        <div class="user-meta">📱 ${u.telefone} · ${fmtDT(u.dataCadastro)}</div>
+        <div class="user-name">${escapeHtml(u.nome)}</div>
+        <div class="user-meta">📱 ${escapeHtml(u.telefone)} · ${escapeHtml(fmtDT(u.dataCadastro))}</div>
       </div>
       <div class="user-actions">
-        <button class="btn btn-success btn-xs" onclick="approveUser('${u.id}')">✔ Aprovar</button>
-        <button class="btn btn-danger btn-xs" onclick="deactivateUser('${u.id}')">✖</button>
+        <button class="btn btn-success btn-xs" onclick="approveUser(${jsArg(u.id)})">✔ Aprovar</button>
+        <button class="btn btn-danger btn-xs" onclick="deactivateUser(${jsArg(u.id)})">✖</button>
       </div>
     </div>`).join('')
         : '<p style="color:var(--gray-400);font-size:.85rem">Nenhum cadastro pendente</p>';
       document.getElementById('admin-pending-users').innerHTML = pendingHtml;
+      renderPasswordResetRequests('admin-reset-requests-dashboard');
     }
 
     function dismissForgotAlert(logIdentifier, event) {
@@ -4129,27 +4217,33 @@
         const statusBadge = u.status === 'ativo' ? '<span class="badge badge-green">Ativo</span>' : u.status === 'pendente' ? '<span class="badge badge-yellow">Pendente</span>' : '<span class="badge badge-red">Inativo</span>';
         const perfilLabel = ROLE_LABEL[u.perfil] || u.perfil;
         const perfilCls = ROLE_BADGE[u.perfil] || 'badge-gray';
-        const perfilBadge = `<span class="badge ${perfilCls}">${perfilLabel}</span>`;
+        const perfilBadge = `<span class="badge ${perfilCls}">${escapeHtml(perfilLabel)}</span>`;
+        const isSelfUser = String(u.id) === String(currentUser.id)
+          || String(u.authId || '') === String(currentUser.authId || currentUser.id || '')
+          || normalizePhone(u.telefone) === normalizePhone(currentUser.telefone);
         let actions = '';
-        if (u.id !== currentUser.id) {
+        if (!isSelfUser) {
           // Admin pode aprovar/rejeitar pendentes
           if (u.status === 'pendente') {
-            actions += `<button class="btn btn-success btn-xs" onclick="approveUser('${u.id}')">✔ Aprovar</button>`;
-            actions += `<button class="btn btn-danger btn-xs" onclick="deactivateUser('${u.id}')">✖ Rejeitar</button>`;
+            actions += `<button class="btn btn-success btn-xs" onclick="approveUser(${jsArg(u.id)})">✔ Aprovar</button>`;
+            actions += `<button class="btn btn-danger btn-xs" onclick="deactivateUser(${jsArg(u.id)})">✖ Rejeitar</button>`;
+          }
+          if (isPrivilegedUser()) {
+            actions += `<button class="btn btn-warning btn-xs" onclick="abrirModalReset(${jsArg(u.id)})">🔑 Resetar Senha</button>`;
           }
           // Somente Master pode fazer o restante
           if (currentUser.perfil === 'master') {
-            actions += `<button class="btn btn-primary btn-xs" onclick="editUser('${u.id}')">✏️ Editar</button>`;
-            actions += `<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">🗑️ Excluir</button>`;
-            if (u.status === 'ativo') actions += `<button class="btn btn-warning btn-xs" onclick="deactivateUser('${u.id}')">Desativar</button>`;
-            if (u.status === 'inativo') actions += `<button class="btn btn-primary btn-xs" onclick="activateUser('${u.id}')">Ativar</button>`;
-            if (u.perfil === 'publicador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','administrador')" title="Promover a Admin">→🔐</button>`;
-            if (u.perfil === 'administrador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','master')" title="Promover a Master">→👑</button><button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','publicador')" title="Rebaixar a Publicador">→👤</button>`;
-            if (u.perfil === 'master') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole('${u.id}','administrador')" title="Rebaixar a Admin">→🔐</button>`;
+            actions += `<button class="btn btn-primary btn-xs" onclick="editUser(${jsArg(u.id)})">✏️ Editar</button>`;
+            actions += `<button class="btn btn-danger btn-xs" onclick="deleteUser(${jsArg(u.id)})">🗑️ Excluir</button>`;
+            if (u.status === 'ativo') actions += `<button class="btn btn-warning btn-xs" onclick="deactivateUser(${jsArg(u.id)})">Desativar</button>`;
+            if (u.status === 'inativo') actions += `<button class="btn btn-primary btn-xs" onclick="activateUser(${jsArg(u.id)})">Ativar</button>`;
+            if (u.perfil === 'publicador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole(${jsArg(u.id)},'administrador')" title="Promover a Admin">→🔐</button>`;
+            if (u.perfil === 'administrador') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole(${jsArg(u.id)},'master')" title="Promover a Master">→👑</button><button class="btn btn-ghost btn-xs" onclick="setRole(${jsArg(u.id)},'publicador')" title="Rebaixar a Publicador">→👤</button>`;
+            if (u.perfil === 'master') actions += `<button class="btn btn-ghost btn-xs" onclick="setRole(${jsArg(u.id)},'administrador')" title="Rebaixar a Admin">→🔐</button>`;
           }
         }
         return `<div class="user-item">
-      <div class="avatar">${u.nome.charAt(0)}</div>
+      <div class="avatar">${firstInitial(u.nome)}</div>
       <div class="user-info">
         <div class="user-name">${escHtml(u.nome)}</div>
         <div class="user-meta">📱 ${escHtml(u.telefone)} · ${statusBadge} ${perfilBadge}</div>
@@ -4163,7 +4257,7 @@
 
     function approveUser(id) {
       const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === id);
+      const idx = users.findIndex(u => String(u.id) === String(id));
       if (idx < 0) return;
       users[idx].status = 'ativo';
       save('users', users);
@@ -4174,7 +4268,7 @@
     }
     function deactivateUser(id) {
       const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === id);
+      const idx = users.findIndex(u => String(u.id) === String(id));
       if (idx < 0) return;
       users[idx].status = 'inativo';
       save('users', users);
@@ -4185,7 +4279,7 @@
     }
     function activateUser(id) {
       const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === id);
+      const idx = users.findIndex(u => String(u.id) === String(id));
       if (idx < 0) return;
       users[idx].status = 'ativo';
       save('users', users);
@@ -4196,7 +4290,7 @@
 
     async function editUser(id) {
       const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === id);
+      const idx = users.findIndex(u => String(u.id) === String(id));
       if (idx < 0) return;
       const u = users[idx];
       const res = await modal({
@@ -4205,11 +4299,11 @@
         html: `
       <div class="form-group">
         <label class="form-label">Nome</label>
-        <input class="form-control" id="edit-user-name" value="${u.nome}" />
+        <input class="form-control" id="edit-user-name" value="${escapeHtml(u.nome)}" />
       </div>
       <div class="form-group">
         <label class="form-label">Telefone</label>
-        <input class="form-control" id="edit-user-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" value="${u.telefone}" />
+        <input class="form-control" id="edit-user-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" value="${escapeHtml(u.telefone)}" />
       </div>
     `,
         actions: [
@@ -4226,7 +4320,7 @@
             toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).', 'error');
             return;
           }
-          const existingOther = users.find(u => u.id !== id && ((u.telefone || '').replace(/[^0-9]/g, '').trim() === newPhone || u.telefone === newPhone));
+          const existingOther = users.find(u => String(u.id) !== String(id) && (normalizePhone(u.telefone) === newPhone || u.telefone === newPhone));
           if (existingOther) {
             toast(`O telefone ${newPhone} já pertence a outro usuário (${existingOther.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
             return;
@@ -4242,30 +4336,171 @@
 
     async function deleteUser(id) {
       const users = load('users') || [];
-      const u = users.find(u => u.id === id);
+      const u = users.find(u => String(u.id) === String(id));
       if (!u) return;
       const res = await modal({
         title: 'Excluir Usuário',
-        desc: `Tem certeza que deseja excluir permanentemente o cadastro de <b>${u.nome}</b>? Esta ação não pode ser desfeita.`,
+        desc: `Tem certeza que deseja excluir permanentemente o cadastro de <b>${escapeHtml(u.nome)}</b>? Esta ação não pode ser desfeita.`,
         actions: [
           { label: 'Cancelar', class: 'btn-ghost', value: false },
           { label: 'Excluir', class: 'btn-danger', value: true }
         ]
       });
       if (res) {
-        const newUsers = users.filter(usr => usr.id !== id);
+        const newUsers = users.filter(usr => String(usr.id) !== String(id));
         save('users', newUsers);
         toast('Usuário excluído com sucesso.', 'info');
         if (adminTab === 'users') renderAdminUsers();
       }
     }
-    async function resetPassword() {
-      toast('A redefinição deve ser feita pelo fluxo seguro do Supabase Auth. Nenhuma senha padrão é criada.', 'info', 6000);
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('Senha copiada!', 'success');
+    }
+
+    function copyTextFromElement(id) {
+      const el = document.getElementById(id);
+      const text = el ? (el.textContent || '').trim() : '';
+      if (!text) return;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+          .then(() => toast('Senha copiada!', 'success'))
+          .catch(() => fallbackCopyText(text));
+        return;
+      }
+
+      fallbackCopyText(text);
+    }
+
+    async function getFunctionErrorMessage(error, fallback) {
+      if (error?.context) {
+        try {
+          const body = await error.context.json();
+          if (body?.message) return body.message;
+        } catch (e) { }
+      }
+      return error?.message || fallback;
+    }
+
+    async function abrirModalReset(id) {
+      const users = load('users') || [];
+      const user = users.find(u => String(u.id) === String(id) || String(u.authId || '') === String(id));
+      if (!user) {
+        toast('Usuário não encontrado.', 'error');
+        return;
+      }
+      await abrirModalResetPorTelefone(user.telefone, user.nome);
+    }
+
+    async function abrirModalResetPorTelefone(telefone, nome = '') {
+      if (!isPrivilegedUser()) {
+        toast('Apenas administradores podem resetar senhas.', 'error');
+        return;
+      }
+      if (!supabaseClient) {
+        toast('Serviço de autenticação indisponível.', 'error');
+        return;
+      }
+
+      const cleanPhone = normalizePhone(telefone);
+      if (!/^[0-9]{10,11}$/.test(cleanPhone)) {
+        toast('Telefone inválido para reset.', 'error');
+        return;
+      }
+
+      const users = load('users') || [];
+      const targetUser = users.find(u => normalizePhone(u.telefone) === cleanPhone);
+      const displayName = nome || targetUser?.nome || cleanPhone;
+
+      const confirmed = await modal({
+        title: 'Resetar Senha',
+        desc: `Defina uma senha temporária para <b>${escapeHtml(displayName)}</b>.`,
+        html: `
+      <div class="form-group">
+        <label class="form-label">Nova senha temporária</label>
+        <input class="form-control" id="reset-temp-pass" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar senha temporária</label>
+        <input class="form-control" id="reset-temp-pass2" type="password" autocomplete="new-password" placeholder="Repita a senha" />
+      </div>
+    `,
+        actions: [
+          { label: 'Cancelar', cls: 'btn-ghost', value: false },
+          { label: 'Resetar Senha', cls: 'btn-warning', value: true }
+        ]
+      });
+
+      if (!confirmed) return;
+
+      let novaSenha = document.getElementById('reset-temp-pass')?.value || '';
+      const novaSenha2 = document.getElementById('reset-temp-pass2')?.value || '';
+      const passEl = document.getElementById('reset-temp-pass');
+      const pass2El = document.getElementById('reset-temp-pass2');
+      if (passEl) passEl.value = '';
+      if (pass2El) pass2El.value = '';
+
+      if (novaSenha.length < 6) {
+        novaSenha = '';
+        toast('A senha temporária deve ter pelo menos 6 caracteres.', 'error');
+        return;
+      }
+      if (novaSenha !== novaSenha2) {
+        novaSenha = '';
+        toast('As senhas não coincidem.', 'error');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('admin-reset-password', {
+          body: { telefone: cleanPhone, novaSenha }
+        });
+
+        if (error || !data?.ok) {
+          const message = await getFunctionErrorMessage(error, 'Não foi possível resetar a senha.');
+          toast(message === 'Usuario nao encontrado.' ? 'Usuário não encontrado.' : message, 'error', 7000);
+          novaSenha = '';
+          return;
+        }
+
+        addLog(currentUser.id, currentUser.nome, 'RECUPERACAO_SENHA_CONCLUIDA', `Senha temporária redefinida para ${displayName} (${cleanPhone})`);
+        await refreshPasswordResetRequests();
+
+        const tempPasswordId = `temp-password-${uuid()}`;
+        await modal({
+          title: 'Senha Temporária Definida',
+          desc: `Repasse esta senha ao publicador <b>${escapeHtml(displayName)}</b>.`,
+          html: `
+      <div style="background:var(--gray-100);border:1px solid var(--gray-300);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div id="${tempPasswordId}" style="font-family:monospace;font-size:1.2rem;font-weight:800;text-align:center;letter-spacing:0">${escapeHtml(novaSenha)}</div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-full" onclick="copyTextFromElement(${jsArg(tempPasswordId)})">Copiar senha</button>
+    `,
+          actions: [
+            { label: 'Fechar', cls: 'btn-primary', value: true }
+          ],
+          center: true
+        });
+
+        novaSenha = '';
+      } catch (e) {
+        novaSenha = '';
+        toast('Não foi possível resetar a senha.', 'error', 7000);
+      }
     }
     function setRole(id, newPerfil) {
       if (currentUser.perfil !== 'master') { toast('Apenas o Master pode alterar perfis.', 'error'); return; }
       const users = load('users') || [];
-      const idx = users.findIndex(u => u.id === id);
+      const idx = users.findIndex(u => String(u.id) === String(id));
       if (idx < 0) return;
       const oldPerfil = users[idx].perfil;
       users[idx].perfil = newPerfil;
@@ -4289,13 +4524,13 @@
       container.innerHTML = list.map(b => {
         const statusBadge = b.status === 'agendado' ? '<span class="badge badge-blue">🔵 Agendado</span>' : b.status === 'presente' ? '<span class="badge badge-green">🟢 Presente</span>' : b.status === 'finalizado' ? '<span class="badge badge-gray">⚫ Finalizado</span>' : '';
         return `<div class="user-item">
-      <div class="avatar" style="font-size:.75rem">${b.usuarioNome.charAt(0)}</div>
+      <div class="avatar" style="font-size:.75rem">${firstInitial(b.usuarioNome)}</div>
       <div class="user-info">
-        <div class="user-name">${b.usuarioNome}</div>
-        <div class="user-meta">${b.carrinhoNome} · ${b.turno}</div>
+        <div class="user-name">${escapeHtml(b.usuarioNome)}</div>
+        <div class="user-meta">${escapeHtml(b.carrinhoNome)} · ${escapeHtml(b.turno)}</div>
         <div>${statusBadge}</div>
       </div>
-      <button class="btn btn-danger btn-xs" onclick="adminCancelBooking('${b.id}')">✖</button>
+      <button class="btn btn-danger btn-xs" onclick="adminCancelBooking(${jsArg(b.id)})">✖</button>
     </div>`;
       }).join('');
     }
@@ -4307,7 +4542,7 @@
       const b = bookings.find(x => x.id === id);
       const res = await modal({
         title: 'Cancelar Agendamento',
-        desc: `Cancelar agendamento de <b>${b.usuarioNome}</b>?`,
+        desc: `Cancelar agendamento de <b>${escapeHtml(b.usuarioNome)}</b>?`,
         html: `<div class="form-group"><label class="form-label">Justificativa (opcional)</label><input class="form-control" id="cancel-reason" placeholder="Motivo do cancelamento..."/></div>`,
         actions: [{ label: 'Cancelar Agendamento', cls: 'btn-danger', value: 'ok' }, { label: 'Voltar', cls: 'btn-ghost', value: null }]
       });
@@ -4326,9 +4561,9 @@
       const users = (load('users') || []).filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
       const carts = (load('carts') || []).filter(c => c.ativo);
       const turnos = load('turnos') || [];
-      const userOpts = users.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
-      const cartOpts = carts.map(c => `<option value="${c.id}">${c.nome} — ${c.local}</option>`).join('');
-      const turnoOpts = turnos.map(t => `<option value="${t}">${t}</option>`).join('');
+      const userOpts = users.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.nome)}</option>`).join('');
+      const cartOpts = carts.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nome)} — ${escapeHtml(c.local)}</option>`).join('');
+      const turnoOpts = turnos.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
       const res = await modal({
         title: 'Criar Agendamento',
         html: `
@@ -4372,9 +4607,9 @@
       <div class="log-item">
         <div class="log-icon" style="background:${LOG_COLORS[l.acao] || 'var(--gray-100)'}">${LOG_ICONS[l.acao] || '📝'}</div>
         <div class="log-text">
-          <div class="log-action">${l.acao.replace(/_/g, ' ')}</div>
-          <div class="log-detail">${l.detalhes}</div>
-          <div class="log-time">👤 ${l.usuarioNome} · ${fmtDT(l.timestamp)}</div>
+          <div class="log-action">${escapeHtml(l.acao.replace(/_/g, ' '))}</div>
+          <div class="log-detail">${escapeHtml(l.detalhes)}</div>
+          <div class="log-time">👤 ${escapeHtml(l.usuarioNome)} · ${escapeHtml(fmtDT(l.timestamp))}</div>
         </div>
       </div>`).join('');
     }
@@ -4432,7 +4667,7 @@
         const present = period.filter(b => b.usuarioId === u.id && b.checkInHora).length;
         return { nome: u.nome.split(' ').slice(0, 2).join(' '), total, present, rate: total ? Math.round(present / total * 100) : 0 };
       }).filter(u => u.total > 0).sort((a, b) => b.total - a.total);
-      document.getElementById('report-tbody').innerHTML = pubStats.length ? pubStats.map(p => `<tr><td>${p.nome}</td><td>${p.total}</td><td>${p.present}</td><td><b style="color:${p.rate >= 70 ? 'var(--green)' : 'var(--yellow)'}">${p.rate}%</b></td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--gray-400)">Sem dados no período</td></tr>';
+      document.getElementById('report-tbody').innerHTML = pubStats.length ? pubStats.map(p => `<tr><td>${escapeHtml(p.nome)}</td><td>${p.total}</td><td>${p.present}</td><td><b style="color:${p.rate >= 70 ? 'var(--green)' : 'var(--yellow)'}">${p.rate}%</b></td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--gray-400)">Sem dados no período</td></tr>';
     }
 
     document.getElementById('btn-share-needed-whatsapp').onclick = () => {
@@ -4627,6 +4862,56 @@
       toast('Dados antigos removidos!', 'success');
     };
 
+    function isDuplicatePendingResetError(error) {
+      const text = `${error?.code || ''} ${error?.message || ''}`;
+      return text.includes('23505') || text.includes('password_reset_one_pending_per_phone');
+    }
+
+    async function solicitarResetSenha() {
+      const input = document.getElementById('forgot-phone');
+      const button = document.getElementById('btn-search-forgot');
+      const telefone = normalizePhone(input ? input.value : '');
+      const publicSuccessMessage = 'Se o telefone estiver cadastrado, a solicitação será enviada ao administrador.';
+
+      document.getElementById('forgot-result').style.display = 'none';
+
+      if (!/^[0-9]{10,11}$/.test(telefone)) {
+        toast('Digite um telefone válido com DDD.', 'error');
+        return;
+      }
+
+      if (!supabaseClient) {
+        toast('Não foi possível enviar a solicitação agora. Tente novamente mais tarde.', 'error', 6000);
+        return;
+      }
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Enviando...';
+      }
+
+      try {
+        const { error } = await supabaseClient
+          .from('password_reset_requests')
+          .insert({ telefone, telefone_normalizado: telefone, status: 'pendente' });
+
+        if (error && !isDuplicatePendingResetError(error)) {
+          toast('Não foi possível enviar a solicitação agora. Tente novamente mais tarde.', 'error', 6000);
+          return;
+        }
+
+        if (input) input.value = '';
+        toast(publicSuccessMessage, 'success', 7000);
+      } catch (e) {
+        toast('Não foi possível enviar a solicitação agora. Tente novamente mais tarde.', 'error', 6000);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Buscar Minha Conta';
+        }
+      }
+    }
+
     // ============================================================
     // EVENT LISTENERS
     // ============================================================
@@ -4661,11 +4946,7 @@
       document.getElementById('login-form').style.display = 'block';
     };
 
-    document.getElementById('btn-search-forgot').onclick = () => {
-      // Não consultar usuários por telefone nem revelar se uma conta existe.
-      document.getElementById('forgot-result').style.display = 'none';
-      toast('Por segurança, a senha não é redefinida por WhatsApp. Solicite ao administrador um convite seguro do Supabase Auth.', 'info', 7000);
-    };
+    document.getElementById('btn-search-forgot').onclick = solicitarResetSenha;
     document.getElementById('forgot-phone').onkeydown = e => { if (e.key === 'Enter') document.getElementById('btn-search-forgot').click(); };
     function renderCongregacaoOptions() {
       const sel = document.getElementById('reg-congregacao');
@@ -5446,6 +5727,7 @@
       }
 
       renderImprevistoAffectedList();
+      renderPasswordResetRequests('admin-reset-requests-imprevisto');
     }
 
     function onImprevistoPointSelect(closedPointId) {
@@ -5501,10 +5783,10 @@
       container.innerHTML = affected.map(b => `
     <div style="background:#fff;border:1px solid var(--gray-300);padding:10px 14px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="font-weight:700;font-size:0.95rem">${b.usuarioNome}</div>
-        <div style="font-size:0.8rem;color:var(--gray-600)">📍 ${b.carrinhoNome} • 📅 ${fmtD(b.data)} às ${b.turno}</div>
+        <div style="font-weight:700;font-size:0.95rem">${escapeHtml(b.usuarioNome)}</div>
+        <div style="font-size:0.8rem;color:var(--gray-600)">📍 ${escapeHtml(b.carrinhoNome)} • 📅 ${escapeHtml(fmtD(b.data))} às ${escapeHtml(b.turno)}</div>
       </div>
-      <a href="https://wa.me/55${(b.usuarioTelefone || '').replace(/[^0-9]/g, '')}?text=Olá!%20Aviso%20do%20Carrinho:%20O%20ponto%20de%20apoio%20mudou%20temporariamente.%20Verifique%20no%20app!" target="_blank" rel="noopener" class="btn btn-warning btn-xs">📱 Notificar WhatsApp</a>
+      <a href="https://wa.me/55${normalizePhone(b.usuarioTelefone)}?text=Olá!%20Aviso%20do%20Carrinho:%20O%20ponto%20de%20apoio%20mudou%20temporariamente.%20Verifique%20no%20app!" target="_blank" rel="noopener" class="btn btn-warning btn-xs">📱 Notificar WhatsApp</a>
     </div>
   `).join('');
     }
