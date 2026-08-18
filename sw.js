@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenda-carrinho-v32-whatsapp-names';
+const CACHE_NAME = 'agenda-carrinho-v33-reset-password';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
