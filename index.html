@@ -460,6 +460,42 @@
       transform: scale(.97);
     }
 
+    .btn:disabled,
+    .btn-excluir:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .location-card-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .location-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .location-order-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 36px);
+      gap: 6px;
+    }
+
+    .location-order-btn {
+      width: 36px;
+      min-height: 34px;
+      padding: 4px 0;
+      font-size: .9rem;
+      line-height: 1;
+    }
+
     .btn-full {
       width: 100%
     }
@@ -2533,6 +2569,69 @@
     const escHtml = escapeHtml;
     const jsArg = value => escapeHtml(JSON.stringify(String(value ?? '')));
     const firstInitial = value => escapeHtml((String(value || '').trim().charAt(0) || '?').toUpperCase());
+    const DEFAULT_SERVICE_LOCATION_ORDER = ['CAPS', 'Padaria Lucidina', 'Padaria União'];
+
+    function normalizeOrderKey(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+    }
+
+    function getOrderedServiceLocations(list) {
+      const source = Array.isArray(list) ? list : [];
+      const defaultRank = new Map(DEFAULT_SERVICE_LOCATION_ORDER.map((name, index) => [normalizeOrderKey(name), index]));
+      const hasExplicitOrder = source.some(loc => Number.isFinite(Number(loc.displayOrder)));
+
+      return source
+        .map((loc, index) => ({ loc, index }))
+        .sort((a, b) => {
+          const orderA = Number(a.loc.displayOrder);
+          const orderB = Number(b.loc.displayOrder);
+          const rankA = hasExplicitOrder && Number.isFinite(orderA)
+            ? orderA
+            : (defaultRank.has(normalizeOrderKey(a.loc.name)) ? defaultRank.get(normalizeOrderKey(a.loc.name)) : 1000 + a.index);
+          const rankB = hasExplicitOrder && Number.isFinite(orderB)
+            ? orderB
+            : (defaultRank.has(normalizeOrderKey(b.loc.name)) ? defaultRank.get(normalizeOrderKey(b.loc.name)) : 1000 + b.index);
+          return rankA - rankB || a.index - b.index;
+        })
+        .map(item => item.loc);
+    }
+
+    function withServiceLocationDisplayOrder(list) {
+      return getOrderedServiceLocations(list).map((loc, index) => ({ ...loc, displayOrder: index + 1 }));
+    }
+
+    function orderCartsByServiceLocations(carts, serviceLocations) {
+      const orderedLocations = getOrderedServiceLocations(serviceLocations);
+      const rankById = new Map();
+      const rankByName = new Map();
+      orderedLocations.forEach((loc, index) => {
+        rankById.set(String(loc.id || ''), index);
+        rankByName.set(normalizeOrderKey(loc.name), index);
+      });
+
+      return [...(Array.isArray(carts) ? carts : [])]
+        .map((cart, index) => {
+          const idRank = rankById.has(String(cart.id || '')) ? rankById.get(String(cart.id || '')) : Infinity;
+          const nameRank = rankByName.has(normalizeOrderKey(cart.local)) ? rankByName.get(normalizeOrderKey(cart.local)) : Infinity;
+          return { cart, index, rank: Math.min(idRank, nameRank) };
+        })
+        .sort((a, b) => a.rank - b.rank || a.index - b.index)
+        .map(item => item.cart);
+    }
+
+    function syncCartsOrderWithServiceLocations(serviceLocations, saveFn = save) {
+      const carts = load('carts') || [];
+      if (!carts.length) return false;
+
+      const orderedCarts = orderCartsByServiceLocations(carts, serviceLocations);
+      const changed = orderedCarts.some((cart, index) => cart.id !== carts[index]?.id);
+      if (changed) saveFn('carts', orderedCarts);
+      return changed;
+    }
     // Senhas nunca são processadas ou armazenadas pelo frontend.
     const authEmailForPhone = phone => `${normalizePhone(phone)}@auth.app-carrinho.local`;
     const isPrivilegedUser = () => {
@@ -2613,9 +2712,9 @@
       let carts = load('carts');
       if (!carts) {
         carts = [
-          { id: 'c1', nome: 'Carrinho 1', local: 'Padaria União', descricao: 'Ponto de Táxi', endereco: 'Padaria União', googleMapsUrl: 'https://www.google.com/maps/search/Padaria+União', ativo: true, capMax: 3, capMin: 2, congregacaoId: 'boturussu' },
           { id: 'c2', nome: 'Carrinho 2', local: 'CAPS', descricao: 'Ponto de Ônibus', endereco: 'CAPS', googleMapsUrl: 'https://www.google.com/maps/search/CAPS+Centro+de+Atenção+Psicossocial', ativo: true, capMax: 3, capMin: 2, congregacaoId: 'boturussu' },
-          { id: 'c3', nome: 'Carrinho 3', local: 'Padaria Lucidina', descricao: 'Ponto de Ônibus', endereco: 'Padaria Lucidina', googleMapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', ativo: true, capMax: 3, capMin: 2, congregacaoId: 'boturussu' }
+          { id: 'c3', nome: 'Carrinho 3', local: 'Padaria Lucidina', descricao: 'Ponto de Ônibus', endereco: 'Padaria Lucidina', googleMapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', ativo: true, capMax: 3, capMin: 2, congregacaoId: 'boturussu' },
+          { id: 'c1', nome: 'Carrinho 1', local: 'Padaria União', descricao: 'Ponto de Táxi', endereco: 'Padaria União', googleMapsUrl: 'https://www.google.com/maps/search/Padaria+União', ativo: true, capMax: 3, capMin: 2, congregacaoId: 'boturussu' }
         ];
         saveFn('carts', carts);
       } else {
@@ -2717,9 +2816,9 @@
       let serviceLocations = load('service_locations');
       if (!serviceLocations || !serviceLocations.length) {
         serviceLocations = [
-          { id: 'c1', name: 'Padaria União', type: 'Ponto de Táxi', mapsUrl: 'https://www.google.com/maps/search/Padaria+União', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-cg1', isActive: true },
-          { id: 'c2', name: 'CAPS', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/CAPS', photoUrl: '', defaultSupportPointId: 'sp-renata', defaultEquipmentId: 'eq-cg1', isActive: true },
-          { id: 'c3', name: 'Padaria Lucidina', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-dp1', isActive: true }
+          { id: 'c2', name: 'CAPS', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/CAPS', photoUrl: '', defaultSupportPointId: 'sp-renata', defaultEquipmentId: 'eq-cg1', isActive: true, displayOrder: 1 },
+          { id: 'c3', name: 'Padaria Lucidina', type: 'Ponto de Ônibus', mapsUrl: 'https://www.google.com/maps/search/Padaria+Lucidina', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-dp1', isActive: true, displayOrder: 2 },
+          { id: 'c1', name: 'Padaria União', type: 'Ponto de Táxi', mapsUrl: 'https://www.google.com/maps/search/Padaria+União', photoUrl: '', defaultSupportPointId: 'sp-isabe', defaultEquipmentId: 'eq-cg1', isActive: true, displayOrder: 3 }
         ];
         saveFn('service_locations', serviceLocations);
       } else {
@@ -2732,10 +2831,16 @@
             }
           }
         });
+        const orderedServiceLocations = withServiceLocationDisplayOrder(serviceLocations);
+        if (orderedServiceLocations.some((loc, index) => loc.id !== serviceLocations[index]?.id || loc.displayOrder !== serviceLocations[index]?.displayOrder)) {
+          serviceLocations = orderedServiceLocations;
+          updated = true;
+        }
         if (updated) {
           saveFn('service_locations', serviceLocations);
         }
       }
+      syncCartsOrderWithServiceLocations(serviceLocations, saveFn);
 
       let responsibilities = load('responsibilities');
       if (!responsibilities || !responsibilities.length) {
@@ -3387,7 +3492,8 @@
     // --- CARTS ---
     function renderCarts() {
       const carts = load('carts') || [];
-      const serviceLocs = load('service_locations') || [];
+      const serviceLocs = getOrderedServiceLocations(load('service_locations') || []);
+      const orderedCarts = orderCartsByServiceLocations(carts, serviceLocs);
       const supportPoints = load('support_points') || [];
       const equipments = load('equipments') || [];
       const turnos = load('turnos') || [];
@@ -3399,10 +3505,10 @@
       const lbl = `${DAY_NAMES[dt.getDay()]}, ${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
       document.getElementById('selected-date-label').textContent = '📅 ' + lbl;
 
-      if (!carts.filter(c => c.ativo).length) { container.innerHTML = '<div class="empty-state"><span class="empty-icon">🛒</span><h3>Nenhum carrinho ativo</h3></div>'; return; }
+      if (!orderedCarts.filter(c => c.ativo).length) { container.innerHTML = '<div class="empty-state"><span class="empty-icon">🛒</span><h3>Nenhum carrinho ativo</h3></div>'; return; }
 
       container.innerHTML = '';
-      carts.filter(c => c.ativo).forEach(cart => {
+      orderedCarts.filter(c => c.ativo).forEach(cart => {
         const div = document.createElement('div');
         div.className = 'cart-card';
         div.style.marginBottom = '20px';
@@ -5597,7 +5703,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(key => {
-            if (key !== 'agenda-carrinho-v25') {
+            if (key !== 'agenda-carrinho-v35-location-order') {
               caches.delete(key);
             }
           });
@@ -5607,7 +5713,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=27').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=28').then((reg) => {
             console.log('SW registrado com sucesso:', reg.scope);
             reg.update();
           }).catch((err) => {
@@ -6003,7 +6109,7 @@
     // ADMIN LOCAIS DE SERVIÇO & EQUIPAMENTOS CRUD
     // ============================================================
     function renderAdminLocations() {
-      const serviceLocs = load('service_locations') || [];
+      const serviceLocs = getOrderedServiceLocations(load('service_locations') || []);
       const supportPoints = load('support_points') || [];
       const container = document.getElementById('admin-locations-list');
       if (!container) return;
@@ -6013,18 +6119,24 @@
         return;
       }
 
-      container.innerHTML = serviceLocs.map(loc => {
+      container.innerHTML = serviceLocs.map((loc, index) => {
         const sp = supportPoints.find(p => p.id === loc.defaultSupportPointId);
-        const spLabel = sp ? `${sp.name} (${sp.responsibleName || 'Irmã'})` : 'Padrão da Congregação';
+        const spLabel = sp ? `${escHtml(sp.name)} (${escHtml(sp.responsibleName || 'Irmã')})` : 'Padrão da Congregação';
+        const isFirst = index === 0;
+        const isLast = index === serviceLocs.length - 1;
         return `
     <div class="card" style="margin-bottom:12px">
-      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="card-body location-card-body">
         <div>
           <div style="font-size:1.05rem;font-weight:700;color:var(--navy)">📍 ${escHtml(loc.name)}</div>
           <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${escHtml(loc.type || 'Local de Serviço')}</b></div>
           <div style="font-size:0.82rem;color:var(--blue);margin-top:2px">📦 Ponto de Apoio: <b>${spLabel}</b></div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <div class="location-actions">
+          <div class="location-order-actions" aria-label="Alterar posição">
+            <button class="btn btn-ghost btn-xs location-order-btn" type="button" onclick="moveServiceLocation(${jsArg(loc.id)}, -1)" title="Subir local" aria-label="Subir ${escHtml(loc.name)}" ${isFirst ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-ghost btn-xs location-order-btn" type="button" onclick="moveServiceLocation(${jsArg(loc.id)}, 1)" title="Descer local" aria-label="Descer ${escHtml(loc.name)}" ${isLast ? 'disabled' : ''}>↓</button>
+          </div>
           <button class="btn btn-primary btn-xs" type="button" onclick="openLocationModal(${jsArg(loc.id)})">✏️ Editar</button>
           <button class="btn-excluir" type="button" onclick="excluirLocal(${jsArg(loc.id)})" title="Excluir local de serviço"><span>🗑️</span> Excluir</button>
         </div>
@@ -6032,6 +6144,25 @@
     </div>
   `;
       }).join('');
+    }
+
+    function moveServiceLocation(locId, direction) {
+      const list = load('service_locations') || [];
+      const ordered = withServiceLocationDisplayOrder(list);
+      const index = ordered.findIndex(loc => loc.id === locId);
+      const targetIndex = index + direction;
+
+      if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) return;
+
+      const next = [...ordered];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      const withOrder = next.map((loc, orderIndex) => ({ ...loc, displayOrder: orderIndex + 1 }));
+
+      save('service_locations', withOrder);
+      syncCartsOrderWithServiceLocations(withOrder);
+      renderAdminLocations();
+      renderCarts();
+      toast(direction < 0 ? 'Local movido para cima.' : 'Local movido para baixo.', 'success');
     }
 
     async function openLocationModal(locId = null) {
@@ -6110,11 +6241,12 @@
           list.push({
             id: uuid(),
             ...updatedData,
-            isActive: true
+            isActive: true,
+            displayOrder: list.length + 1
           });
         }
 
-        save('service_locations', list);
+        save('service_locations', withServiceLocationDisplayOrder(list));
         toast('Local de Serviço salvo com sucesso! 🎉', 'success');
         renderAdminLocations();
         renderCarts();
@@ -6161,8 +6293,9 @@
         return;
       }
 
-      const newList = list.filter(l => l.id !== id);
+      const newList = withServiceLocationDisplayOrder(list.filter(l => l.id !== id));
       save('service_locations', newList);
+      syncCartsOrderWithServiceLocations(newList);
       renderAdminLocations();
       if (typeof renderCarts === 'function') {
         renderCarts();
