@@ -433,6 +433,33 @@
       font-size: .75rem
     }
 
+    .btn-excluir {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: .75rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      text-decoration: none;
+      background-color: #dc2626;
+      color: var(--white);
+    }
+
+    .btn-excluir:hover {
+      background-color: #b91c1c;
+    }
+
+    .btn-excluir:active {
+      transform: scale(.97);
+    }
+
     .btn-full {
       width: 100%
     }
@@ -5997,7 +6024,10 @@
           <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${escHtml(loc.type || 'Local de Serviço')}</b></div>
           <div style="font-size:0.82rem;color:var(--blue);margin-top:2px">📦 Ponto de Apoio: <b>${spLabel}</b></div>
         </div>
-        <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
+          <button class="btn-excluir" data-id="${loc.id}" title="Excluir"><span>🗑️</span> Excluir</button>
+        </div>
       </div>
     </div>
   `;
@@ -6090,6 +6120,64 @@
         renderCarts();
       }
     }
+
+    function adicionarLog({ tipo, mensagem, usuario, timestamp }) {
+      addLog(currentUser ? currentUser.id : 'admin', usuario || 'Master', tipo, mensagem);
+    }
+
+    async function excluirLocal(id) {
+      const list = load('service_locations') || [];
+      const local = list.find(l => l.id === id);
+      if (!local) {
+        toast('Local não encontrado!', 'error');
+        return;
+      }
+
+      const confirmar = await modal({
+        title: 'Excluir Local?',
+        desc: `Tem certeza que deseja excluir '${local.name}'? Esta ação não pode ser desfeita.`,
+        actions: [
+          { label: 'Cancelar', cls: 'btn-ghost', value: false },
+          { label: 'Confirmar Exclusão', cls: 'btn-danger', value: true }
+        ]
+      });
+
+      if (!confirmar) return;
+
+      // Verificação de segurança
+      const agenda = load('bookings') || [];
+      const agendaCustom = JSON.parse(localStorage.getItem('agenda') || '[]');
+      const imprevistosCustom = JSON.parse(localStorage.getItem('imprevistos') || '[]');
+
+      const carts = load('carts') || [];
+      const localCartsIds = carts.filter(c => c.local === local.name || c.id === local.id).map(c => c.id);
+
+      const emUsoAgenda = agenda.some(b => b.status === 'agendado' && (localCartsIds.includes(b.carrinhoId) || b.carrinhoId === id));
+      const emUsoAgendaCustom = agendaCustom.some(item => item.localId == id);
+      const emUsoImprevistosCustom = imprevistosCustom.some(item => item.localId == id);
+
+      if (emUsoAgenda || emUsoAgendaCustom || emUsoImprevistosCustom) {
+        toast('Não é possível excluir. Local em uso.', 'error');
+        return;
+      }
+
+      const newList = list.filter(l => l.id !== id);
+      save('service_locations', newList);
+      renderAdminLocations();
+      if (typeof renderCarts === 'function') {
+        renderCarts();
+      }
+
+      adicionarLog({
+        tipo: 'EXCLUSAO',
+        mensagem: `Local excluído: ${local.name}`,
+        usuario: 'Master',
+        timestamp: new Date()
+      });
+
+      toast('Local excluído com sucesso! 🎉', 'success');
+    }
+
 
     function renderAdminEquipments() {
       const eqList = load('equipments') || [];
@@ -6200,6 +6288,20 @@
       if (authenticated && currentUser) showScreen('pub');
       else showScreen('login');
       selectDate(todayStr());
+
+      // Event delegation for deleting locations
+      const locList = document.getElementById('admin-locations-list');
+      if (locList) {
+        locList.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btn-excluir');
+          if (btn) {
+            const id = btn.getAttribute('data-id');
+            if (id) {
+              excluirLocal(id);
+            }
+          }
+        });
+      }
     }
     initApp();
   </script>
