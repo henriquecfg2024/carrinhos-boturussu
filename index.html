@@ -6024,9 +6024,9 @@
           <div style="font-size:0.85rem;color:var(--gray-600)">Tipo: <b>${escHtml(loc.type || 'Local de Serviço')}</b></div>
           <div style="font-size:0.82rem;color:var(--blue);margin-top:2px">📦 Ponto de Apoio: <b>${spLabel}</b></div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-primary btn-xs" onclick="openLocationModal('${loc.id}')">✏️ Editar</button>
-          <button class="btn-excluir" data-id="${loc.id}" title="Excluir"><span>🗑️</span> Excluir</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-primary btn-xs" type="button" onclick="openLocationModal(${jsArg(loc.id)})">✏️ Editar</button>
+          <button class="btn-excluir" type="button" onclick="excluirLocal(${jsArg(loc.id)})" title="Excluir local de serviço"><span>🗑️</span> Excluir</button>
         </div>
       </div>
     </div>
@@ -6135,7 +6135,7 @@
 
       const confirmar = await modal({
         title: 'Excluir Local?',
-        desc: `Tem certeza que deseja excluir '${local.name}'? Esta ação não pode ser desfeita.`,
+        desc: `Tem certeza que deseja excluir '${escHtml(local.name)}'? Esta ação não pode ser desfeita.`,
         actions: [
           { label: 'Cancelar', cls: 'btn-ghost', value: false },
           { label: 'Confirmar Exclusão', cls: 'btn-danger', value: true }
@@ -6157,7 +6157,7 @@
       const emUsoImprevistosCustom = imprevistosCustom.some(item => item.localId == id);
 
       if (emUsoAgenda || emUsoAgendaCustom || emUsoImprevistosCustom) {
-        toast('Não é possível excluir. Local em uso.', 'error');
+        toast('Não é possível excluir. Este local está em uso em agendamentos ou imprevistos.', 'error');
         return;
       }
 
