@@ -5607,7 +5607,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=26').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=27').then((reg) => {
             console.log('SW registrado com sucesso:', reg.scope);
             reg.update();
           }).catch((err) => {

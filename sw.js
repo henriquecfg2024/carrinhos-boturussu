@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenda-carrinho-v33-reset-password';
+const CACHE_NAME = 'agenda-carrinho-v34-delete-location';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
