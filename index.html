@@ -5614,7 +5614,22 @@ function renderCalendar() {
       }
     }
 
-    function renderReports() {
+    
+    function formatTurnoShort(t) {
+      if (!t) return '';
+      const parts = t.split('-');
+      if (parts.length !== 2) return t;
+      const fmtPart = p => {
+        const segs = p.trim().split(':');
+        const h = segs[0];
+        const m = segs[1];
+        if (!m || m === '00') return `${parseInt(h, 10)}h`;
+        return `${parseInt(h, 10)}h${m}`;
+      };
+      return `${fmtPart(parts[0])} - ${fmtPart(parts[1])}`;
+    }
+
+function renderReports() {
       const [start, end] = getPeriodRange();
       const bookings = load('bookings') || [];
       const carts = load('carts') || [];
@@ -5649,83 +5664,171 @@ function renderCalendar() {
     }
 
     document.getElementById('btn-share-needed-whatsapp').onclick = () => {
+      const [start, end] = getPeriodRange();
       const bookings = load('bookings') || [];
-      const carts = load('carts') || [];
-      const turnos = load('turnos') || [];
-      const today = todayStr();
+      const carts = (load('carts') || []).filter(c => c.ativo);
+      const turnos = load('turnos') || ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
+      const blocked = load('blocked') || [];
+
+      // Constrói lista de dias no período
+      const dates = [];
+      let cur = start;
+      while (cur <= end) {
+        if (!blocked.includes(cur)) {
+          dates.push(cur);
+        }
+        cur = addDays(cur, 1);
+      }
 
       const neededList = [];
-      for (let i = 0; i < 7; i++) {
-        const ds = addDays(today, i);
-        carts.filter(c => c.ativo).forEach(cart => {
+      dates.forEach(date => {
+        carts.forEach(cart => {
           turnos.forEach(turno => {
-            const slotBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === ds && b.turno === turno && b.status !== 'cancelado');
-            const count = slotBookings.length;
-            if (count > 0 && count < cart.capMin) {
-              neededList.push({ cart, data: ds, turno, names: slotBookings.map(b => b.usuarioNome.split(' ').slice(0, 2).join(' ')).join(', '), missing: cart.capMin - count });
+            const slotB = bookings.filter(b => b.carrinhoId === cart.id && b.data === date && b.turno === turno && b.status !== 'cancelado');
+            const count = slotB.length;
+            if (count < cart.capMax) {
+              neededList.push({
+                cart,
+                date,
+                turno,
+                count,
+                missing: cart.capMax - count,
+                slotB
+              });
             }
           });
         });
-      }
+      });
 
       if (!neededList.length) {
-        toast('Não há turnos necessitando de apoio nos próximos 7 dias! 🎉', 'info');
+        toast('Todos os horários do período estão preenchidos! 🎉', 'info');
         return;
       }
 
-      let txt = `📢 *SOLICITAÇÃO DE APOIO NOS CARRINHOS*\n*Congregação Boturussu*\n\nOs seguintes turnos possuem apenas 1 irmão(ã) agendado(a) e precisam de companheiro(a):\n\n`;
+      let txt = `📢 *TURNOS DISPONÍVEIS - CARRINHO DE PUBLICAÇÕES*\n\n`;
 
+      // Agrupa por data
+      const groupedByDate = {};
       neededList.forEach(item => {
-        const dt = new Date(item.data + 'T12:00:00');
-        txt += `🛒 *${item.cart.nome} — ${item.cart.local}*\n  📆 ${DAY_NAMES[dt.getDay()]} (${fmtD(item.data)}) às 🕐 ${item.turno}\n  👤 Agendado: ${item.names} (Falta ${item.missing} companheiro)\n\n`;
+        if (!groupedByDate[item.date]) groupedByDate[item.date] = [];
+        groupedByDate[item.date].push(item);
       });
 
-      txt += `👉 *Acesse o aplicativo para apoiar:* https://tinyurl.com/carrinhos-publicacoes`;
+      Object.keys(groupedByDate).sort().forEach(date => {
+        const [y, m, d] = date.split('-');
+        const dt = new Date(date + 'T12:00:00');
+        const dayName = DAY_NAMES_FULL[dt.getDay()].split('-')[0];
+        txt += `*${dayName} ${d}/${m}*\n`;
+
+        groupedByDate[date].forEach(item => {
+          const turnoFmt = formatTurnoShort(item.turno);
+          const locName = carts.length > 1 ? ` (${item.cart.local})` : '';
+          if (item.count === 0) {
+            txt += `${turnoFmt}${locName}: *Vago*\n`;
+          } else {
+            const names = item.slotB.map(b => b.usuarioNome.split(' ')[0]).join(', ');
+            txt += `${turnoFmt}${locName}: ${item.missing} vaga${item.missing > 1 ? 's' : ''} (${names} aguardando companhia)\n`;
+          }
+        });
+        txt += `\n`;
+      });
+
+      txt += `👉 *Acesse o aplicativo para agendar:* https://carrinhos-boturussu.vercel.app`;
 
       if (navigator.share) {
         navigator.share({ text: txt });
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(txt);
-        toast('Convocação copiada! Cole no WhatsApp da congregação.', 'success', 4000);
+        toast('Turnos vagos copiados! Cole no WhatsApp da congregação.', 'success', 4000);
       } else {
-        const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-        toast('Convocação copiada!', 'success');
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast('Turnos vagos copiados!', 'success');
       }
     };
 
     document.getElementById('btn-export-whatsapp').onclick = () => {
       const [start, end] = getPeriodRange();
       const bookings = load('bookings') || [];
-      const carts = load('carts') || [];
-      const turnos = load('turnos') || [];
-      let txt = `📋 *ESCALA DO CARRINHO DE PUBLICAÇÕES*\n📅 ${fmtD(start)} a ${fmtD(end)}\n\n`;
-      carts.filter(c => c.ativo).forEach(cart => {
-        txt += `🛒 *${cart.nome} — ${cart.local}*\n`;
-        // Get unique dates in range
-        const dates = [];
-        let d = start;
-        while (d <= end) { dates.push(d); d = addDays(d, 1); }
+      const carts = (load('carts') || []).filter(c => c.ativo);
+      const turnos = load('turnos') || ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
+      const blocked = load('blocked') || [];
+
+      if (!carts.length) {
+        toast('Nenhum carrinho ativo encontrado.', 'error');
+        return;
+      }
+
+      // Constrói lista de dias no período
+      const dates = [];
+      let cur = start;
+      while (cur <= end) {
+        if (!blocked.includes(cur)) {
+          dates.push(cur);
+        }
+        cur = addDays(cur, 1);
+      }
+
+      let txt = `📋 *ESCALA DO CARRINHO DE PUBLICAÇÕES*\n\n`;
+
+      carts.forEach((cart, cartIdx) => {
+        if (carts.length > 1) {
+          txt += `🛒 *${cart.local || cart.nome}*\n`;
+        }
+        
         dates.forEach(date => {
+          const [y, m, d] = date.split('-');
           const dt = new Date(date + 'T12:00:00');
+          const dayName = DAY_NAMES_FULL[dt.getDay()].split('-')[0];
+          const dateHeader = `*${dayName} ${d}/${m}*`;
+
           const dayBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === date && b.status !== 'cancelado');
-          if (dayBookings.length) {
-            txt += `\n  📆 ${DAY_NAMES[dt.getDay()]} ${fmtD(date)}\n`;
-            turnos.forEach(turno => {
-              const sl = dayBookings.filter(b => b.turno === turno);
-              if (sl.length) {
-                const names = sl.map(b => b.usuarioNome.split(' ').slice(0, 2).join(' ')).join(', ');
-                const warn = sl.length < cart.capMin ? ` ⚠️ falta ${cart.capMin - sl.length}` : '';
-                txt += `  🕐 ${turno}: ${names}${warn}\n`;
-              }
-            });
-          }
+          
+          txt += `${dateHeader}\n`;
+
+          turnos.forEach(turno => {
+            const slotB = dayBookings.filter(b => b.turno === turno);
+            const count = slotB.length;
+            const turnoFmt = formatTurnoShort(turno);
+
+            if (count >= cart.capMax) {
+              txt += `${turnoFmt}: _Preenchido_\n`;
+            } else if (count === 0) {
+              txt += `${turnoFmt}: *Vago*\n`;
+            } else {
+              const missing = cart.capMax - count;
+              const names = slotB.map(b => b.usuarioNome.split(' ')[0]).join(', ');
+              txt += `${turnoFmt}: ${missing} vaga${missing > 1 ? 's' : ''} (${names} aguardando companhia)\n`;
+            }
+          });
+          txt += `\n`;
         });
-        txt += '\n';
+
+        if (cartIdx < carts.length - 1) {
+          txt += `─────────────────────\n\n`;
+        }
       });
-      txt += '_Gerado via Agenda do Carrinho de Publicações_';
-      if (navigator.share) { navigator.share({ text: txt }); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast('Escala copiada! Cole no WhatsApp.', 'success', 4000); }
-      else { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Escala copiada!', 'success'); }
+
+      txt += `👉 *Acesse o aplicativo para agendar:* https://carrinhos-boturussu.vercel.app`;
+
+      if (navigator.share) {
+        navigator.share({ text: txt });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt);
+        toast('Escala copiada! Cole no WhatsApp.', 'success', 4000);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast('Escala copiada!', 'success');
+      }
     };
 
     // --- CONFIG ---
