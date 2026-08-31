@@ -3812,11 +3812,8 @@
       const dayNum = String(parseInt(d, 10));
       const monthName = MONTH_NAMES[parseInt(m, 10) - 1];
 
-      document.getElementById('sel-date-label').innerHTML = `
-        <div style="font-size:1.15rem;font-weight:800;color:var(--navy)">
-          📅 ${dayOfWeek}, ${dayNum} de ${monthName} de ${y}
-        </div>
-      `;
+      const selDateEl = document.getElementById('selected-date-label');
+      if (selDateEl) selDateEl.innerHTML = `<div style="font-size:1.15rem;font-weight:800;color:var(--navy)">📅 ${dayOfWeek}, ${dayNum} de ${monthName} de ${y}</div>`;
 
       renderLocationSelector();
 
@@ -4072,6 +4069,35 @@
         <div style="margin-top:14px">${slotsHtml}</div>
       </div>`;
         container.appendChild(div);
+      });
+    }
+
+    function promptConditionalBooking(cartId, date, turno) {
+      const bookings = load('bookings') || [];
+      const turnos = load('turnos') || ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
+      const slotBookings = bookings.filter(b => b.carrinhoId === cartId && b.data === date && b.turno === turno && b.status !== 'cancelado');
+      if (slotBookings.length > 0) {
+        createBooking(cartId, date, turno);
+        return;
+      }
+      const otherSlots = turnos.filter(t => t !== turno).map(t => {
+        const tb = bookings.filter(b => b.carrinhoId === cartId && b.data === date && b.turno === t && b.status !== 'cancelado');
+        return { turno: t, count: tb.length, names: tb.map(b => b.usuarioNome.split(' ')[0]).join(', ') };
+      }).filter(s => s.count > 0);
+      if (!otherSlots.length) {
+        createBooking(cartId, date, turno);
+        return;
+      }
+      const suggestionsHtml = otherSlots.map(s => `<button class="btn btn-outline btn-full" style="margin-bottom:8px;min-height:46px;font-size:0.95rem" onclick="document.querySelector('.modal-overlay').remove(); createBooking('${cartId}','${date}','${s.turno}')">🕐 ${s.turno} — com ${escHtml(s.names)} (${s.count}/3)</button>`).join('');
+      modal({
+        title: '💡 Dica de Serviço',
+        desc: `O horário <b>${turno}</b> ainda não tem ninguém agendado. Que tal um horário que já tem irmãos confirmados?`,
+        html: `<div style="margin:12px 0">${suggestionsHtml}</div><div style="text-align:center;margin-top:8px;font-size:0.85rem;color:var(--gray-500)">Ou continue com o horário escolhido:</div>`,
+        actions: [
+          { label: `Agendar ${turno} mesmo assim`, cls: 'btn-ghost', action: () => createBooking(cartId, date, turno) },
+          { label: 'Cancelar', cls: 'btn-ghost' }
+        ],
+        center: true
       });
     }
 
