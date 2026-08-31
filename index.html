@@ -5629,6 +5629,17 @@ function renderCalendar() {
       return `${fmtPart(parts[0])} - ${fmtPart(parts[1])}`;
     }
 
+
+    function getWhatsAppDateRange() {
+      const today = todayStr();
+      const dtToday = new Date();
+      const y = dtToday.getFullYear();
+      const m = dtToday.getMonth();
+      const lastDay = new Date(y, m + 1, 0).getDate();
+      const endOfMonth = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      return [today, endOfMonth];
+    }
+
 function renderReports() {
       const [start, end] = getPeriodRange();
       const bookings = load('bookings') || [];
@@ -5664,7 +5675,7 @@ function renderReports() {
     }
 
     document.getElementById('btn-share-needed-whatsapp').onclick = () => {
-      const [start, end] = getPeriodRange();
+      const [start, end] = getWhatsAppDateRange();
       const bookings = load('bookings') || [];
       const carts = (load('carts') || []).filter(c => c.ativo);
       const turnos = load('turnos') || ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
@@ -5752,7 +5763,7 @@ function renderReports() {
     };
 
     document.getElementById('btn-export-whatsapp').onclick = () => {
-      const [start, end] = getPeriodRange();
+      const [start, end] = getWhatsAppDateRange();
       const bookings = load('bookings') || [];
       const carts = (load('carts') || []).filter(c => c.ativo);
       const turnos = load('turnos') || ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
