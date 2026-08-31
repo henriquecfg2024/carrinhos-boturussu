@@ -1062,7 +1062,110 @@
       border: 2px solid var(--white);
     }
 
-    /* ===== AGRUPAMENTO E CARDS DE TURNOS ===== */
+    
+    /* ===== CLIMA ULTRA COMPACTO (BARRA HORIZONTAL 48PX) ===== */
+    .weather-compact-bar {
+      background: #ffffff;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 6px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      min-height: 44px;
+    }
+    .weather-compact-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .weather-compact-forecast {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+    .weather-fc-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .weather-fc-sep {
+      color: var(--gray-300);
+      font-weight: 300;
+    }
+
+    /* ===== BANNER DE APOIO INTELIGENTE ===== */
+    .partner-banner-modern {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28);
+    }
+    .partner-banner-ball {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #d97706;
+      font-size: 1.25rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .partner-banner-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .partner-banner-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .partner-banner-sub {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.92);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .partner-banner-btn {
+      background: #ffffff;
+      color: #d97706;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .partner-banner-btn:active {
+      transform: scale(0.96);
+    }
+/* ===== AGRUPAMENTO E CARDS DE TURNOS ===== */
     .shift-group-title {
       font-size: .82rem;
       font-weight: 800;
@@ -2047,31 +2150,16 @@
       <div class="content-full scroll-top" id="pub-content">
         <!-- Home Tab -->
         <div id="tab-home" style="padding:16px;padding-bottom:88px">
-          <div class="welcome-card">
-            <h2 id="welcome-name">Olá, Irmão! 🙏</h2>
-            <p>Escolha um dia e horário para servir no carrinho</p>
-          </div>
-          <!-- Weather Widget -->
-          <div id="weather-widget"
-            style="background:linear-gradient(135deg,#1a3a5c,#2b6cb0);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;color:#fff;display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:12px">
-                <span id="weather-icon" style="font-size:2.2rem">⏳</span>
-                <div>
-                  <div style="font-size:1.6rem;font-weight:700" id="weather-temp">--°C</div>
-                  <div style="font-size:.78rem;opacity:.85" id="weather-desc">Carregando...</div>
-                  <div style="font-size:.72rem;opacity:.7" id="weather-loc">📍 Detectando local...</div>
-                </div>
-              </div>
-              <div style="text-align:right;font-size:.75rem;opacity:.85">
-                <div>💧 <span id="weather-hum">--</span>%</div>
-                <div>💨 <span id="weather-wind">--</span> km/h</div>
-                <div style="margin-top:4px;opacity:.7" id="weather-feels">Sensação --°C</div>
-              </div>
+          <!-- Weather Widget Ultra Compact (48px) -->
+          <div id="weather-widget" class="weather-compact-bar" style="display:none">
+            <div class="weather-compact-left">
+              <span id="weather-icon" style="font-size:1.2rem">⛅</span>
+              <span id="weather-temp" style="font-weight:800;font-size:0.95rem;color:var(--navy)">--°C</span>
+              <span id="weather-desc" style="font-size:0.8rem;color:var(--gray-600)">--</span>
+              <span style="font-size:0.75rem;color:var(--gray-400)">•</span>
+              <span id="weather-loc" style="font-size:0.8rem;color:var(--gray-600)">📍 São Paulo</span>
             </div>
-            <div id="weather-forecast"
-              style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);overflow-x:auto">
-            </div>
+            <div id="weather-forecast" class="weather-compact-forecast"></div>
           </div>
           <!-- Partner Needed Alert Card -->
           <div id="partner-needed-card" style="display:none;margin-bottom:14px;"></div>
@@ -3437,7 +3525,8 @@
 
     function initPubScreen() {
       document.getElementById('pub-greeting').textContent = `Olá, ${currentUser.nome.split(' ')[0]}! 🙏`;
-      document.getElementById('welcome-name').textContent = `Olá, ${currentUser.nome.split(' ')[0]}! 🙏`;
+      const wName = document.getElementById('welcome-name');
+      if (wName) wName.textContent = `Olá, ${currentUser.nome.split(' ')[0]}! 🙏`;
       document.getElementById('profile-name').textContent = currentUser.nome;
       document.getElementById('profile-phone').textContent = currentUser.telefone;
       document.getElementById('profile-badge').textContent = ROLE_LABEL[currentUser.perfil] || currentUser.perfil;
@@ -3487,9 +3576,11 @@
           // Reverse geocode city name
           const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
           const geo = await geoRes.json();
-          const city = geo.address.city || geo.address.town || geo.address.village || geo.address.suburb || 'Sua cidade';
-          document.getElementById('weather-loc').textContent = `📍 ${city}`;
-          // Fetch weather (requesting is_day)
+          const city = geo.address.city || geo.address.town || geo.address.village || geo.address.suburb || 'São Paulo';
+          const locEl = document.getElementById('weather-loc');
+          if (locEl) locEl.textContent = `📍 ${city}`;
+
+          // Fetch weather
           const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4`;
           const res = await fetch(url);
           const d = await res.json();
@@ -3505,25 +3596,26 @@
             else if (code === 1 || code === 2) { icon = '🌌'; desc = 'Parcialm. nublado'; }
           }
 
-          document.getElementById('weather-icon').textContent = icon;
-          document.getElementById('weather-temp').textContent = `${Math.round(cur.temperature_2m)}°C`;
-          document.getElementById('weather-desc').textContent = desc;
-          document.getElementById('weather-hum').textContent = cur.relative_humidity_2m;
-          document.getElementById('weather-wind').textContent = Math.round(cur.wind_speed_10m);
-          document.getElementById('weather-feels').textContent = `Sensação ${Math.round(cur.apparent_temperature)}°C`;
-          // 3-day forecast (skip today index 0)
+          const iconEl = document.getElementById('weather-icon');
+          const tempEl = document.getElementById('weather-temp');
+          const descEl = document.getElementById('weather-desc');
+          if (iconEl) iconEl.textContent = icon;
+          if (tempEl) tempEl.textContent = `${Math.round(cur.temperature_2m)}°C`;
+          if (descEl) descEl.textContent = desc;
+
+          // 3-day forecast in single line: Ter 23°/15° | Qua 19°/13° | Qui 25°/11°
           const fc = document.getElementById('weather-forecast');
-          fc.innerHTML = d.daily.time.slice(1, 4).map((t, i) => {
-            const dt = new Date(t + 'T12:00:00');
-            const wc = d.daily.weather_code[i + 1];
-            return `<div style="flex:1;min-width:60px;text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:6px 4px">
-          <div style="font-size:.7rem;opacity:.8">${WEEKDAYS[dt.getDay()]}</div>
-          <div style="font-size:1.2rem">${WMO_ICONS[wc] || '🌤️'}</div>
-          <div style="font-size:.72rem;font-weight:600">${Math.round(d.daily.temperature_2m_max[i + 1])}°</div>
-          <div style="font-size:.68rem;opacity:.7">${Math.round(d.daily.temperature_2m_min[i + 1])}°</div>
-        </div>`;
-          }).join('');
-          widget.style.display = 'block';
+          if (fc && d.daily && d.daily.time) {
+            fc.innerHTML = d.daily.time.slice(1, 4).map((t, i) => {
+              const dt = new Date(t + 'T12:00:00');
+              const wc = d.daily.weather_code[i + 1];
+              const maxT = Math.round(d.daily.temperature_2m_max[i + 1]);
+              const minT = Math.round(d.daily.temperature_2m_min[i + 1]);
+              const dayIcon = WMO_ICONS[wc] || '🌤️';
+              return `<span class="weather-fc-item">${WEEKDAYS[dt.getDay()]} ${dayIcon} <b>${maxT}°</b>/${minT}°</span>`;
+            }).join('<span class="weather-fc-sep">|</span>');
+          }
+          widget.style.display = 'flex';
         } catch (e) { widget.style.display = 'none'; }
       }, () => { widget.style.display = 'none'; });
     }
@@ -3564,7 +3656,16 @@
       renderCarts();
     }
 
-    function renderCalendar() {
+        function copySupportAddress(addr) {
+      if (!addr) return;
+      navigator.clipboard.writeText(addr).then(() => {
+        toast('📋 Endereço copiado para a área de transferência!', 'success', 2500);
+      }).catch(() => {
+        toast('Endereço: ' + addr, 'info', 4000);
+      });
+    }
+
+function renderCalendar() {
       const y = calDate.getFullYear(), m = calDate.getMonth();
       document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[m]} ${y}`;
       // Headers
@@ -3813,7 +3914,9 @@
       const monthName = MONTH_NAMES[parseInt(m, 10) - 1];
 
       const selDateEl = document.getElementById('selected-date-label');
-      if (selDateEl) selDateEl.innerHTML = `<div style="font-size:1.15rem;font-weight:800;color:var(--navy)">📅 ${dayOfWeek}, ${dayNum} de ${monthName} de ${y}</div>`;
+      if (selDateEl) {
+        selDateEl.innerHTML = `<div style="font-size:1.15rem;font-weight:800;color:var(--navy)">📅 ${dayOfWeek}, ${dayNum} de ${monthName} de ${y}</div>`;
+      }
 
       renderLocationSelector();
 
@@ -3851,7 +3954,7 @@
       displayedCarts.forEach(cart => {
         const div = document.createElement('div');
         div.className = 'cart-card';
-        div.style.marginBottom = '24px';
+        div.style.marginBottom = '20px';
 
         // Resolve Local de Serviço, Equipamento e Ponto de Apoio Efetivo
         const loc = serviceLocs.find(l => l.name === cart.local || l.id === cart.id) || { name: cart.local, mapsUrl: cart.googleMapsUrl, type: cart.descricao };
@@ -3868,7 +3971,7 @@
         let fallbackWarningHtml = '';
         if (effectiveRes.isFallback) {
           fallbackWarningHtml = `
-            <div style="background:#fef3c7;border:2px solid #d97706;padding:14px 16px;border-radius:12px;margin:12px;color:#78350f;font-size:0.95rem;line-height:1.5">
+            <div style="background:#fef3c7;border:2px solid #d97706;padding:14px 16px;border-radius:12px;margin-bottom:14px;color:#78350f;font-size:0.95rem;line-height:1.5">
               <div style="font-weight:800;font-size:1.05rem;color:#b45309;margin-bottom:4px">⚠️ ATENÇÃO: Mudança no Ponto de Apoio!</div>
               A ${escHtml(defPoint.name)} está indisponível hoje (${escHtml(effectiveRes.reason || 'imprevisto')}).<br>
               Seu serviço no <b>${escHtml(cart.local)}</b> está <b>MANTIDO!</b><br>
@@ -3951,16 +4054,19 @@
           }
 
           // Badges e Ações
-          let badge = '', action = '';
+          let badge = '', action = '', alertBox = '';
           if (mine) {
             const canCheckin = timing.canCheckinNow && mine.status === 'agendado';
             const canCheckout = mine.status === 'presente';
-            badge = mine.status === 'agendado' ? `<span class="badge badge-blue" style="font-size:0.85rem">🔵 Agendado</span>` :
+            badge = mine.status === 'agendado' ? `<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:700;font-size:0.85rem">Você aqui</span>` :
               mine.status === 'presente' ? `<span class="badge badge-green" style="font-size:0.85rem">🟢 Presente</span>` :
                 `<span class="badge badge-gray" style="font-size:0.85rem">⚫ Finalizado</span>`;
-            if (canCheckin) action = `<button class="btn btn-success btn-full" style="min-height:50px;font-weight:700;font-size:1.05rem" onclick="doCheckin('${mine.id}')">✅ Fazer Check-in</button>`;
-            else if (canCheckout) action = `<button class="btn btn-warning btn-full" style="min-height:50px;font-weight:700;font-size:1.05rem" onclick="doCheckout('${mine.id}')">🏁 Fazer Check-out</button>`;
-            else if (mine.status === 'agendado' && !hasStarted) action = `<button class="btn btn-danger btn-full" style="min-height:46px;font-weight:600" onclick="cancelBooking('${mine.id}')">✖ Cancelar Agendamento</button>`;
+            if (count === 1 && !hasStarted && !isPast) {
+              alertBox = `<div style="background:#fffbeb;border:1px solid #fef3c7;padding:8px 12px;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:10px">⚠️ <b>Só confirma com +1 irmão.</b> Te avisamos quando alguém entrar.</div>`;
+            }
+            if (canCheckin) action = `<button class="btn btn-primary btn-full" style="min-height:50px;font-weight:800;font-size:1.05rem" onclick="doCheckin('${mine.id}')">✔️ Fazer check-in agora</button>`;
+            else if (canCheckout) action = `<button class="btn btn-warning btn-full" style="min-height:50px;font-weight:800;font-size:1.05rem" onclick="doCheckout('${mine.id}')">🏁 Fazer check-out</button>`;
+            else if (mine.status === 'agendado' && !hasStarted) action = `<button class="btn btn-danger btn-full" style="min-height:44px;font-weight:600" onclick="cancelBooking('${mine.id}')">✖ Cancelar Agendamento</button>`;
           } else if (isPast) {
             badge = `<span class="badge badge-gray" style="font-size:0.85rem">⏳ Horário passou</span>`;
           } else if (hasStarted) {
@@ -3968,32 +4074,37 @@
             action = `<button class="btn btn-ghost btn-full" disabled style="min-height:46px;font-weight:600">⏱ Em andamento</button>`;
           } else if (inWaiting) {
             badge = `<span class="badge badge-warning" style="font-size:0.85rem">⏳ ${inWaiting.posicao}º na fila</span>`;
-            action = `<button class="btn btn-danger btn-full" style="min-height:46px;font-weight:600" onclick="leaveWaiting('${inWaiting.id}')">✖ Sair da Fila</button>`;
+            action = `<button class="btn btn-ghost btn-full" style="min-height:46px;font-weight:700" onclick="leaveWaiting('${inWaiting.id}')">✔️ Você está na lista de espera (Sair)</button>`;
           } else if (isFull) {
             badge = `<span class="badge badge-gray" style="font-size:0.85rem">🔒 Lotado</span>`;
             action = `<button class="btn btn-warning btn-full" style="min-height:46px;font-weight:600" onclick="joinWaiting('${cart.id}','${selectedDate}','${turno}')">⏳ Entrar na Lista de Espera</button>`;
           } else {
-            if (count === 2) badge = `<span class="badge badge-urgent-almost" style="font-size:0.85rem">🔥 Quase cheio (2/3)</span>`;
-            else if (count === 1) badge = `<span class="badge badge-urgent-waiting" style="font-size:0.85rem">⚡ Precisa de apoio (1/3)</span>`;
-            else badge = `<span class="badge badge-green" style="font-size:0.85rem">🟢 0/${cart.capMax} vagas</span>`;
+            if (count === 2) badge = `<span class="badge" style="background:#10b981;color:#fff;font-weight:800;font-size:0.82rem;border-radius:999px;padding:4px 10px">🔥 Quase completo!</span>`;
+            else if (count === 1) badge = `<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;font-size:0.82rem;border-radius:999px;padding:4px 10px">⏳ Aguardando - falta 1</span>`;
+            else badge = `<span class="badge badge-green" style="font-size:0.82rem">🟢 0/${cart.capMax} vagas</span>`;
             
+            if (count === 1 && !hasStarted && !isPast) {
+              alertBox = `<div style="background:#fffbeb;border:1px solid #fef3c7;padding:8px 12px;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:10px">⚠️ <b>Precisa de mais 1 irmão.</b> Ajude a confirmar esta saída!</div>`;
+            }
+
             if (tooSoon) {
               action = `<button class="btn btn-ghost btn-full" disabled style="min-height:46px;font-weight:600">Bloqueado (&lt;${config.minHours}h)</button>`;
             } else {
-              action = `<button class="btn btn-primary btn-full" style="min-height:50px;font-weight:700;font-size:1.05rem" onclick="promptConditionalBooking('${cart.id}','${selectedDate}','${turno}')">Agendar este horário</button>`;
+              action = `<button class="btn btn-primary btn-full" style="min-height:50px;font-weight:800;font-size:1.05rem" onclick="promptConditionalBooking('${cart.id}','${selectedDate}','${turno}')">⭐ Entrar nesse horário</button>`;
             }
           }
 
           return `
-            <div class="slot-card" style="border: 1px solid var(--gray-200); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #ffffff;">
+            <div class="slot-card" style="border: 1.5px solid var(--gray-200); border-radius: 16px; padding: 14px; margin-bottom: 12px; background: #ffffff; box-shadow: var(--shadow-sm);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-size: 1.05rem; font-weight: 800; color: var(--navy);">🕐 ${turno}</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--navy);">🕐 ${turno}</div>
                 ${badge}
               </div>
               <div style="display: flex; gap: 8px; margin: 10px 0;">${ballsHtml}</div>
-              <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 10px;">
+              <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 8px;">
                 <b>Confirmados:</b> ${escHtml(names)}
               </div>
+              ${alertBox}
               ${action ? `<div>${action}</div>` : ''}
             </div>
           `;
@@ -4005,11 +4116,11 @@
 
         let slotsHtml = '';
         if (morningActive.length > 0) {
-          slotsHtml += `<div style="font-size:0.88rem;font-weight:800;color:var(--navy);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.5px">☀️ Manhã</div>`;
+          slotsHtml += `<div style="font-size:0.85rem;font-weight:800;color:var(--navy);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">☀️ Manhã (${morningActive.length})</div>`;
           slotsHtml += morningActive.map(renderSlotItem).join('');
         }
         if (afternoonActive.length > 0) {
-          slotsHtml += `<div style="font-size:0.88rem;font-weight:800;color:var(--navy);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.5px">🌤️ Tarde / Noite</div>`;
+          slotsHtml += `<div style="font-size:0.85rem;font-weight:800;color:var(--navy);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">🌤️ Tarde / Noite (${afternoonActive.length})</div>`;
           slotsHtml += afternoonActive.map(renderSlotItem).join('');
         }
 
@@ -4021,14 +4132,14 @@
         if (emptySlots.length > 0) {
           const isOpen = showEmptySlotsMap[cart.id];
           slotsHtml += `
-            <div class="empty-slots-box">
+            <div class="empty-slots-box" style="margin-top:14px">
               <button type="button" class="empty-slots-toggle" id="empty-slots-btn-${cart.id}" onclick="toggleEmptySlots('${cart.id}')">
                 <span>⚪ Horários sem agendamento (${emptySlots.length})</span>
-                <span>${isOpen ? '▲ Ocultar' : '▼ Ver horários'}</span>
+                <span>${isOpen ? '▲ Ocultar' : '▼ Ver horários vazios'}</span>
               </button>
               <div class="empty-slots-content" id="empty-slots-${cart.id}" style="display:${isOpen ? 'block' : 'none'}">
                 <div class="empty-slots-hint">
-                  💡 <b>Dica de serviço:</b> Dê preferência a horários que já tenham outro publicador agendado para apoiarem um ao outro!
+                  💡 <b>Dica de serviço:</b> Junte-se a um horário que já tenha outro publicador agendado para apoiarem um ao outro!
                 </div>
                 ${emptySlots.map(renderSlotItem).join('')}
               </div>
@@ -4037,36 +4148,51 @@
         }
 
         div.innerHTML = `
-      <div class="cart-header" style="background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:16px;border-radius:12px 12px 0 0">
-        <span style="font-size:1.8rem">📍</span>
+      <div class="cart-header" style="background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:14px 16px;border-radius:14px 14px 0 0">
+        <span style="font-size:1.6rem">📍</span>
         <div style="flex:1">
-          <div style="font-size:1.15rem;font-weight:800">📍 ONDE VOU SERVIR: ${cart.local}</div>
-          <div style="font-size:0.85rem;opacity:0.9">${cart.nome} • ${cart.descricao}</div>
+          <div style="font-size:1.1rem;font-weight:800">${cart.local}</div>
+          <div style="font-size:0.82rem;opacity:0.9">${cart.nome} • ${cart.descricao}</div>
         </div>
       </div>
-      <div class="cart-body" style="padding:16px;background:#f8fafc">
-        <a class="btn btn-outline btn-full" href="${getServiceLocationMapsUrl(cart)}" target="_blank" rel="noopener" style="min-height:48px;margin-bottom:14px;font-size:0.95rem">🗺️ Ver no Google Maps do local de serviço</a>
+      <div class="cart-body" style="padding:14px;background:#f8fafc;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 14px 14px">
         
-        <div style="background:#fff;border:1px solid var(--gray-300);padding:14px;border-radius:12px;margin-bottom:14px">
-          <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin-bottom:4px">📦 ONDE RETIRAR E DEVOLVER:</div>
-          <div style="font-size:1rem;font-weight:700;color:var(--gray-800)">${escHtml(effPoint.name)} (Responsável: ${escHtml(effPoint.responsibleName || 'Irmã')})</div>
-          <div style="font-size:0.88rem;color:var(--gray-600);margin-top:2px">📍 ${escHtml(effPoint.address)}</div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            ${effPoint.showRouteButton && effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;min-height:44px;font-size:0.85rem">🗺️ Rota até a casa</a>` : ''}
+        <!-- MINI CARDS LADO A LADO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <!-- Card Onde vou servir -->
+          <div style="background:#fff;border:1px solid var(--gray-200);padding:12px;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,0.03)">
+            <div>
+              <div style="font-size:0.68rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px">ONDE VOU SERVIR</div>
+              <div style="font-size:0.92rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(cart.local)}</div>
+              <div style="font-size:0.75rem;color:var(--gray-600);line-height:1.3">${escHtml(cart.descricao || cart.nome)}</div>
+            </div>
+            <a class="btn btn-outline btn-sm" href="${getServiceLocationMapsUrl(cart)}" target="_blank" rel="noopener" style="margin-top:10px;min-height:36px;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px">
+              ✈ Ver no Maps
+            </a>
+          </div>
+
+          <!-- Card Onde retirar e devolver -->
+          <div style="background:#fff;border:1px solid var(--gray-200);padding:12px;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,0.03)">
+            <div>
+              <div style="font-size:0.68rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px">ONDE RETIRAR</div>
+              <div style="font-size:0.92rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(effPoint.name)}</div>
+              <div style="font-size:0.75rem;color:var(--gray-600);line-height:1.3">${escHtml(effPoint.address || 'Endereço cadastrado')}</div>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:10px">
+              ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1;min-height:36px;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px">🗺️ Rota</a>` : ''}
+              <button type="button" class="btn btn-ghost btn-sm" style="flex:1;min-height:36px;font-size:0.78rem;font-weight:700;padding:0 4px" onclick="copySupportAddress('${escHtml(effPoint.address)}')">📋 Copiar</button>
+            </div>
           </div>
         </div>
 
-        <div style="background:#fff;border:1px solid var(--gray-300);padding:12px 14px;border-radius:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:1.5rem">🛒</span>
-          <div>
-            <div style="font-size:0.8rem;font-weight:700;color:var(--gray-500);text-transform:uppercase">🛒 O QUE VOU LEVAR:</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--navy)">${escHtml(eq.name)}</div>
-          </div>
+        <div style="background:#fff;border:1px solid var(--gray-200);padding:8px 12px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">🛒</span>
+          <div style="font-size:0.82rem;color:var(--gray-700)"><b>O que levar:</b> ${escHtml(eq.name)}</div>
         </div>
 
         ${fallbackWarningHtml}
 
-        <div style="margin-top:14px">${slotsHtml}</div>
+        <div style="margin-top:10px">${slotsHtml}</div>
       </div>`;
         container.appendChild(div);
       });
@@ -4461,6 +4587,18 @@
       renderCarts();
     }
 
+    function navigateToShiftAndHighlight(cartId, dateStr, turno) {
+      selectedDate = dateStr;
+      selectedLocationId = cartId;
+      renderCalendar();
+      renderLocationSelector();
+      renderCarts();
+      setTimeout(() => {
+        const el = document.getElementById('carts-container');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+
     function checkPartnerNeeded() {
       const card = document.getElementById('partner-needed-card');
       if (!card) return;
@@ -4472,7 +4610,7 @@
 
       const neededShifts = [];
 
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 14; i++) {
         const ds = addDays(today, i);
         carts.filter(c => c.ativo).forEach(cart => {
           turnos.forEach(turno => {
@@ -4496,23 +4634,25 @@
 
       if (neededShifts.length > 0) {
         const item = neededShifts[0];
-        const shiftDate = new Date(item.data + 'T12:00:00');
-        const isToday = item.data === today;
-        const dateLabel = isToday ? 'hoje' : 'em ' + shiftDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        const [y, m, d] = item.data.split('-');
+        const dt = new Date(item.data + 'T12:00:00');
+        const dayW = DAY_NAMES[dt.getDay()];
+        const firstName = item.b.usuarioNome.split(' ')[0];
+        const initial = firstInitial(firstName);
+        const moreCount = neededShifts.length > 1 ? ` <span style="font-size:0.75rem;opacity:0.85">(+${neededShifts.length - 1} precisando)</span>` : '';
 
         card.innerHTML = `
-      <div style="background:linear-gradient(135deg, var(--navy), var(--blue));color:#fff;padding:14px 16px;border-radius:var(--radius);box-shadow:var(--shadow-md);position:relative;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:2rem">🤝</span>
-          <div style="flex:1">
-            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--yellow-light)">⚠️ Precisa de Companheiro(a)</div>
-            <div style="font-size:.95rem;font-weight:700;margin-top:2px">${item.b.usuarioNome.split(' ')[0]} agendou ${dateLabel} e precisa de apoio!</div>
-            <div style="font-size:.82rem;opacity:.95;margin-top:2px">📍 <b>${item.cart.nome} — ${item.cart.local}</b> • 🕒 <b>${item.turno}</b></div>
+          <div class="partner-banner-modern">
+            <div class="partner-banner-ball">${initial}</div>
+            <div class="partner-banner-info">
+              <div class="partner-banner-title">${escHtml(firstName)} precisa de apoio! 🤝${moreCount}</div>
+              <div class="partner-banner-sub">${dayW} ${d}/${m} • ${escHtml(item.cart.local)} ${item.turno} • ${item.count}/3 vagas</div>
+            </div>
+            <button type="button" class="partner-banner-btn" onclick="navigateToShiftAndHighlight('${item.cart.id}','${item.data}','${item.turno}')">
+              Apoiar →
+            </button>
           </div>
-        </div>
-        <button class="btn btn-warning btn-sm btn-full" style="margin-top:12px;font-weight:700" onclick="createBooking('${item.cart.id}','${item.data}','${item.turno}')">🤝 Apoiar este turno com o(a) irmão(ã) →</button>
-      </div>
-    `;
+        `;
         card.style.display = 'block';
       } else {
         card.style.display = 'none';
