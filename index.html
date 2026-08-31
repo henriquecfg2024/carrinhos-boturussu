@@ -1165,6 +1165,225 @@
     .partner-banner-btn:active {
       transform: scale(0.96);
     }
+
+    /* ===== AJUSTE FINO: SELEÇÃO DE LOCAIS EM CARDS MODERNOS ===== */
+    .loc-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      margin-bottom: 4px;
+    }
+    .loc-date-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .loc-count-badge {
+      background: var(--navy);
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .loc-section-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+    }
+    .loc-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .loc-card {
+      background: #ffffff;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .loc-card:active {
+      transform: scale(0.98);
+    }
+    .loc-card.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      box-shadow: 0 4px 14px rgba(30, 58, 95, 0.25);
+    }
+    .loc-card-icon-wrap {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .loc-card.active .loc-card-icon-wrap {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+    .loc-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .loc-card-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+    .loc-card.active .loc-card-title {
+      color: #ffffff;
+    }
+    .loc-card-sub {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .loc-card.active .loc-card-sub {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .loc-card-occupancy {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gray-600);
+    }
+    .loc-card.active .loc-card-occupancy {
+      color: rgba(255, 255, 255, 0.95);
+    }
+    .loc-occupancy-bars {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .loc-bar {
+      width: 12px;
+      height: 4px;
+      border-radius: 2px;
+      background: #cbd5e1;
+    }
+    .loc-bar.bar-orange {
+      background: #f59e0b;
+    }
+    .loc-bar.bar-green {
+      background: #22c55e;
+    }
+    .loc-bar.bar-gray {
+      background: #94a3b8;
+    }
+    .loc-card.active .loc-bar {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .loc-card.active .loc-bar.bar-orange {
+      background: #fbbf24;
+    }
+    .loc-card.active .loc-bar.bar-green {
+      background: #4ade80;
+    }
+    .loc-card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .loc-badge-support {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .loc-card.active .loc-badge-support {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+    }
+    .loc-badge-empty {
+      background: #f8fafc;
+      border: 1px solid var(--gray-200);
+      color: var(--gray-500);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .loc-card.active .loc-badge-empty {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: transparent;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .loc-card-arrow {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: var(--gray-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .loc-card.active .loc-card-arrow {
+      background: #ffffff;
+      color: var(--navy);
+    }
+    .btn-compare-locations {
+      width: 100%;
+      background: #ffffff;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+    .btn-compare-locations.active {
+      background: var(--navy);
+      color: #ffffff;
+      border-color: var(--navy);
+      box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
+    }
 /* ===== AGRUPAMENTO E CARDS DE TURNOS ===== */
     .shift-group-title {
       font-size: .82rem;
@@ -2190,10 +2409,7 @@
             <button class="chip active" onclick="filterCartsNeeded(false,this)">Todos os Turnos</button>
             <button class="chip" onclick="filterCartsNeeded(true,this)">⚠️ Precisam de Apoio</button>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <h3 id="selected-date-label" style="color:var(--navy)">📅 Carregando...</h3>
-            <span id="selected-date-badge" class="badge badge-blue"></span>
-          </div>
+
           <!-- Seletor de Locais (Pills Horizontais) -->
           <div id="location-pills-container" class="location-pills-container"></div>
           <!-- Cart slots -->
@@ -3787,6 +4003,11 @@ function renderCalendar() {
       const container = document.getElementById('location-pills-container');
       if (!container) return;
 
+      const [y, m, d] = selectedDate.split('-');
+      const dtObj = new Date(selectedDate + 'T12:00:00');
+      const dayShort = DAY_NAMES[dtObj.getDay()].toUpperCase();
+      const dateFormatted = `${dayShort}, ${d}/${m}/${y}`;
+
       const carts = (load('carts') || []).filter(c => c.ativo);
       const serviceLocs = getOrderedServiceLocations(load('service_locations') || []);
       const orderedCarts = orderCartsByServiceLocations(carts, serviceLocs);
@@ -3798,20 +4019,17 @@ function renderCalendar() {
         return;
       }
 
-      // Total de vagas geral do dia
-      const totalCapGeneral = orderedCarts.length * turnos.length * 3;
-      const totalBookedGeneral = bookings.length;
+      // Se nenhum local específico estiver selecionado ainda, define o primeiro por padrão
+      if (selectedLocationId === 'all' && orderedCarts.length > 0) {
+        selectedLocationId = orderedCarts[0].id;
+      }
 
-      let pillsHtml = `
-        <button class="loc-pill ${selectedLocationId === 'all' ? 'active' : ''}" onclick="selectLocationPill('all')">
-          🌐 Ver Todos / Comparar <span class="loc-pill-badge">${totalBookedGeneral}/${totalCapGeneral}</span>
-        </button>
-      `;
-
+      let cardsHtml = '';
       orderedCarts.forEach(cart => {
         const cartBookings = bookings.filter(b => b.carrinhoId === cart.id);
         const totalCartCap = turnos.length * cart.capMax;
         const bookedCount = cartBookings.length;
+        const isSelected = selectedLocationId === cart.id;
 
         // Verifica se algum turno deste local precisa de apoio
         const hasNeed = turnos.some(t => {
@@ -3819,15 +4037,57 @@ function renderCalendar() {
           return count > 0 && count < cart.capMin;
         });
 
-        pillsHtml += `
-          <button class="loc-pill ${selectedLocationId === cart.id ? 'active' : ''}" onclick="selectLocationPill('${cart.id}')">
-            📍 ${escHtml(cart.local)} <span class="loc-pill-badge">${bookedCount}/${totalCartCap}</span>
-            ${hasNeed ? '<span class="loc-pill-dot-alert" title="Precisa de apoio!"></span>' : ''}
-          </button>
+        // Constrói as 5 barras de ocupação
+        let barsHtml = '';
+        turnos.forEach(t => {
+          const count = cartBookings.filter(b => b.turno === t).length;
+          let barClass = 'bar-gray';
+          if (count >= cart.capMax) barClass = 'bar-green';
+          else if (count > 0) barClass = 'bar-orange';
+          barsHtml += `<span class="loc-bar ${barClass}"></span>`;
+        });
+
+        let badgeHtml = '';
+        if (hasNeed) {
+          badgeHtml = `<span class="loc-badge-support">precisa apoio 🟠</span>`;
+        } else if (bookedCount === 0) {
+          badgeHtml = `<span class="loc-badge-empty">vazio</span>`;
+        } else if (bookedCount >= totalCartCap) {
+          badgeHtml = `<span class="loc-badge-empty">lotado</span>`;
+        }
+
+        const subText = `${cart.nome} • ${cart.descricao || 'Ponto'} • ${cart.local}`;
+
+        cardsHtml += `
+          <div class="loc-card ${isSelected ? 'active' : ''}" onclick="selectLocationPill('${cart.id}')" role="button" tabindex="0">
+            <div class="loc-card-icon-wrap">📍</div>
+            <div class="loc-card-body">
+              <div class="loc-card-title">${escHtml(cart.local)}</div>
+              <div class="loc-card-sub">${escHtml(subText)}</div>
+              <div class="loc-card-occupancy">
+                <span>${bookedCount}/${totalCartCap} ocupadas</span>
+                <div class="loc-occupancy-bars">${barsHtml}</div>
+              </div>
+            </div>
+            <div class="loc-card-right">
+              ${badgeHtml}
+              <div class="loc-card-arrow">›</div>
+            </div>
+          </div>
         `;
       });
 
-      container.innerHTML = pillsHtml;
+      container.innerHTML = `
+        <div class="loc-header-row">
+          <div class="loc-date-title">${dateFormatted}</div>
+          <div class="loc-count-badge">${orderedCarts.length} LOCAIS</div>
+        </div>
+        <div class="loc-section-label">SELECIONE O LOCAL DO CARRINHO (${orderedCarts.length})</div>
+        <div class="loc-cards-list">${cardsHtml}</div>
+        <button type="button" class="btn-compare-locations ${selectedLocationId === 'all' ? 'active' : ''}" onclick="selectLocationPill('all')">
+          📚 Comparar locais • Ver todos
+        </button>
+      `;
     }
 
     // --- HELPER FUNCTION: GET MAPS URL FOR SUPPORT POINT ---
@@ -3902,23 +4162,10 @@ function renderCalendar() {
       };
     }
 
-    // --- CARTS & SCHEDULE SLOTS WITH 42px BALLS ---
+    // --- CARTS & SCHEDULE SLOTS ---
     function renderCarts() {
       const container = document.getElementById('carts-container');
       if (!container) return;
-
-      const [y, m, d] = selectedDate.split('-');
-      const dtObj = new Date(selectedDate + 'T12:00:00');
-      const dayOfWeek = DAY_NAMES_FULL[dtObj.getDay()];
-      const dayNum = String(parseInt(d, 10));
-      const monthName = MONTH_NAMES[parseInt(m, 10) - 1];
-
-      const selDateEl = document.getElementById('selected-date-label');
-      if (selDateEl) {
-        selDateEl.innerHTML = `<div style="font-size:1.15rem;font-weight:800;color:var(--navy)">📅 ${dayOfWeek}, ${dayNum} de ${monthName} de ${y}</div>`;
-      }
-
-      renderLocationSelector();
 
       const blocked = load('blocked') || [];
       if (blocked.includes(selectedDate)) {
@@ -3940,7 +4187,7 @@ function renderCalendar() {
         return;
       }
 
-      // Filtra pelo seletor de locais (pill)
+      // Filtra pelo seletor de locais
       const displayedCarts = selectedLocationId === 'all' 
         ? activeCarts 
         : activeCarts.filter(c => c.id === selectedLocationId);
@@ -3985,12 +4232,17 @@ function renderCalendar() {
 
         // Processa e categoriza os turnos
         const processedSlots = [];
+        let totalCartBooked = 0;
+        let cartNeedsSupportCount = 0;
+
         turnos.forEach(turno => {
           const slotBookings = bookings.filter(b => b.carrinhoId === cart.id && b.data === selectedDate && b.turno === turno && b.status !== 'cancelado');
           const mine = slotBookings.find(b => b.usuarioId === currentUser.id);
           const count = slotBookings.length;
+          totalCartBooked += count;
           const isFull = count >= cart.capMax;
           const needsPartner = count > 0 && count < cart.capMin;
+          if (needsPartner) cartNeedsSupportCount++;
           if (filterOnlyNeeded && !needsPartner) return;
 
           const inWaiting = waiting.find(w => w.usuarioId === currentUser.id && w.carrinhoId === cart.id && w.data === selectedDate && w.turno === turno);
@@ -4116,11 +4368,11 @@ function renderCalendar() {
 
         let slotsHtml = '';
         if (morningActive.length > 0) {
-          slotsHtml += `<div style="font-size:0.85rem;font-weight:800;color:var(--navy);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">☀️ Manhã (${morningActive.length})</div>`;
+          slotsHtml += `<div style="font-size:0.82rem;font-weight:800;color:var(--gray-600);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">MANHÃ • ORDENADO POR URGÊNCIA • ${morningActive.length} horário${morningActive.length > 1 ? 's' : ''}</div>`;
           slotsHtml += morningActive.map(renderSlotItem).join('');
         }
         if (afternoonActive.length > 0) {
-          slotsHtml += `<div style="font-size:0.85rem;font-weight:800;color:var(--navy);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">🌤️ Tarde / Noite (${afternoonActive.length})</div>`;
+          slotsHtml += `<div style="font-size:0.82rem;font-weight:800;color:var(--gray-600);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.5px">TARDE • ORDENADO POR URGÊNCIA • ${afternoonActive.length} horário${afternoonActive.length > 1 ? 's' : ''}</div>`;
           slotsHtml += afternoonActive.map(renderSlotItem).join('');
         }
 
@@ -4147,53 +4399,53 @@ function renderCalendar() {
           `;
         }
 
+        const totalCartCap = turnos.length * cart.capMax;
+        const supportBadgeText = cartNeedsSupportCount > 0 ? ` • ${cartNeedsSupportCount} precisam de apoio` : '';
+
         div.innerHTML = `
-      <div class="cart-header" style="background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:14px 16px;border-radius:14px 14px 0 0">
-        <span style="font-size:1.6rem">📍</span>
-        <div style="flex:1">
-          <div style="font-size:1.1rem;font-weight:800">${cart.local}</div>
-          <div style="font-size:0.82rem;opacity:0.9">${cart.nome} • ${cart.descricao}</div>
-        </div>
-      </div>
-      <div class="cart-body" style="padding:14px;background:#f8fafc;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 14px 14px">
-        
         <!-- MINI CARDS LADO A LADO -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <!-- Card Onde vou servir -->
-          <div style="background:#fff;border:1px solid var(--gray-200);padding:12px;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,0.03)">
+          <div style="background:#fff;border:1.5px solid var(--gray-200);padding:12px;border-radius:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.02)">
             <div>
               <div style="font-size:0.68rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px">ONDE VOU SERVIR</div>
-              <div style="font-size:0.92rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(cart.local)}</div>
+              <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(cart.local)}</div>
               <div style="font-size:0.75rem;color:var(--gray-600);line-height:1.3">${escHtml(cart.descricao || cart.nome)}</div>
             </div>
-            <a class="btn btn-outline btn-sm" href="${getServiceLocationMapsUrl(cart)}" target="_blank" rel="noopener" style="margin-top:10px;min-height:36px;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px">
-              ✈ Ver no Maps
+            <a class="btn btn-outline btn-sm" href="${getServiceLocationMapsUrl(cart)}" target="_blank" rel="noopener" style="margin-top:10px;min-height:36px;font-size:0.78rem;font-weight:700;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:4px">
+              ✈ Ver no Google Maps
             </a>
           </div>
 
           <!-- Card Onde retirar e devolver -->
-          <div style="background:#fff;border:1px solid var(--gray-200);padding:12px;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,0.03)">
+          <div style="background:#fff;border:1.5px solid var(--gray-200);padding:12px;border-radius:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.02)">
             <div>
-              <div style="font-size:0.68rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px">ONDE RETIRAR</div>
-              <div style="font-size:0.92rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(effPoint.name)}</div>
+              <div style="font-size:0.68rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px">ONDE RETIRAR E DEVOLVER</div>
+              <div style="font-size:0.95rem;font-weight:800;color:var(--navy);margin:4px 0 2px">${escHtml(effPoint.name)}</div>
               <div style="font-size:0.75rem;color:var(--gray-600);line-height:1.3">${escHtml(effPoint.address || 'Endereço cadastrado')}</div>
             </div>
             <div style="display:flex;gap:4px;margin-top:10px">
-              ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1;min-height:36px;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px">🗺️ Rota</a>` : ''}
-              <button type="button" class="btn btn-ghost btn-sm" style="flex:1;min-height:36px;font-size:0.78rem;font-weight:700;padding:0 4px" onclick="copySupportAddress('${escHtml(effPoint.address)}')">📋 Copiar</button>
+              ${effPointMapsUrl ? `<a href="${effPointMapsUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1;min-height:36px;font-size:0.75rem;font-weight:700;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 2px">🗺️ Rota</a>` : ''}
+              <button type="button" class="btn btn-ghost btn-sm" style="flex:1;min-height:36px;font-size:0.75rem;font-weight:700;border-radius:999px;padding:0 2px;border:1px solid var(--gray-300)" onclick="copySupportAddress('${escHtml(effPoint.address)}')">📍 Copiar</button>
             </div>
           </div>
         </div>
 
-        <div style="background:#fff;border:1px solid var(--gray-200);padding:8px 12px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:1.2rem">🛒</span>
-          <div style="font-size:0.82rem;color:var(--gray-700)"><b>O que levar:</b> ${escHtml(eq.name)}</div>
+        <div style="background:#fff;border:1px solid var(--gray-200);padding:8px 12px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.1rem">🛒</span>
+          <div style="font-size:0.8rem;color:var(--gray-700)"><b>O que levar:</b> ${escHtml(eq.name)}</div>
         </div>
 
         ${fallbackWarningHtml}
 
-        <div style="margin-top:10px">${slotsHtml}</div>
-      </div>`;
+        <!-- Seção de Horários -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:1.05rem;font-weight:800;color:var(--navy)">Horários • ${escHtml(cart.local)}</div>
+          <span class="badge" style="background:#fef3c7;color:#92400e;font-weight:700;font-size:0.75rem;border-radius:999px;padding:2px 8px">${totalCartBooked}/${totalCartCap} vagas${supportBadgeText}</span>
+        </div>
+
+        <div>${slotsHtml}</div>
+      `;
         container.appendChild(div);
       });
     }
