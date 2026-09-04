@@ -2280,10 +2280,113 @@
         opacity: 1
       }
     }
+
+    /* ===== ACCESSIBILITY & HIGH CONTRAST MODES ===== */
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .sr-only-focusable:focus,
+    .sr-only-focusable:focus-within {
+      position: fixed !important;
+      top: 10px !important;
+      left: 10px !important;
+      z-index: 99999 !important;
+      width: auto !important;
+      height: auto !important;
+      padding: 12px 20px !important;
+      background: #000000 !important;
+      color: #ffff00 !important;
+      font-weight: 800 !important;
+      border: 3px solid #ffff00 !important;
+      border-radius: var(--radius-sm) !important;
+      overflow: visible !important;
+      clip: auto !important;
+      white-space: normal !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8) !important;
+    }
+
+    /* Font Scaling Zoom */
+    html[data-font-scale="125%"] { font-size: 20px !important; }
+    html[data-font-scale="150%"] { font-size: 24px !important; }
+    html[data-font-scale="175%"] { font-size: 28px !important; }
+    html[data-font-scale="200%"] { font-size: 32px !important; }
+
+    /* High Contrast Theme Override */
+    .app[data-theme="high-contrast"],
+    body.theme-high-contrast {
+      --navy: #000000;
+      --blue: #0033cc;
+      --blue-light: #0055ff;
+      --blue-pale: #001133;
+      --green: #008800;
+      --green-light: #003300;
+      --red: #dd0000;
+      --red-light: #440000;
+      --yellow: #ffaa00;
+      --yellow-light: #332200;
+      --gray-50: #000000;
+      --gray-100: #050505;
+      --gray-200: #ffffff;
+      --gray-300: #ffffff;
+      --gray-400: #eeeeee;
+      --gray-500: #ffffff;
+      --gray-600: #ffffff;
+      --gray-700: #ffffff;
+      --gray-800: #ffffff;
+      --white: #000000;
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+
+    .app[data-theme="high-contrast"] .card,
+    .app[data-theme="high-contrast"] .slot-item,
+    .app[data-theme="high-contrast"] .btn,
+    .app[data-theme="high-contrast"] .topbar,
+    .app[data-theme="high-contrast"] .bottomnav,
+    .app[data-theme="high-contrast"] .modal,
+    .app[data-theme="high-contrast"] input,
+    .app[data-theme="high-contrast"] select {
+      background: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #ffffff !important;
+    }
+
+    .app[data-theme="high-contrast"] .btn-primary {
+      background: #ffff00 !important;
+      color: #000000 !important;
+      border: 2px solid #ffffff !important;
+      font-weight: 900 !important;
+    }
+
+    .app[data-theme="high-contrast"] .chip.active {
+      background: #ffff00 !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+    }
+
+    /* Focus Highlight */
+    .app[data-focus-high="true"] :focus-visible,
+    :focus-visible {
+      outline: 4px solid #f59e0b !important;
+      outline-offset: 3px !important;
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.5) !important;
+    }
   </style>
 </head>
 
 <body>
+  <a href="#pub-content" class="sr-only-focusable">Ir para o conteúdo principal</a>
+  <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <div id="sr-alert-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ==================== PWA INSTALL BANNER ==================== -->
@@ -2406,12 +2509,13 @@
           <div class="topbar-subtitle">Carrinho de Publicações</div>
         </div>
         <div class="topbar-actions">
-          <button class="btn-icon" id="btn-pub-to-admin" title="Voltar ao Painel Admin" style="display:none">👑</button>
-          <button class="btn-icon" id="btn-notif" title="Notificações" style="position:relative">
+          <button class="btn-icon" id="btn-accessibility-pub" title="Acessibilidade e Leitor de Voz (Alt+A)" aria-label="Menu de Acessibilidade e Leitor de Voz" onclick="openAccessibilityModal()">♿</button>
+          <button class="btn-icon" id="btn-pub-to-admin" title="Voltar ao Painel Admin" aria-label="Painel Administrador" style="display:none">👑</button>
+          <button class="btn-icon" id="btn-notif" title="Notificações" aria-label="Notificações" style="position:relative">
             🔔
             <span class="nav-badge" id="notif-count" style="display:none"></span>
           </button>
-          <button class="btn-icon" id="btn-logout-pub" title="Sair">🚪</button>
+          <button class="btn-icon" id="btn-logout-pub" title="Sair" aria-label="Sair da Conta">🚪</button>
         </div>
       </div>
       <!-- CONTENT -->
@@ -2762,8 +2866,9 @@
           <div class="topbar-subtitle" id="admin-role-label">Carrinho de Publicações</div>
         </div>
         <div class="topbar-actions">
-          <button class="btn-icon" id="btn-admin-to-pub" title="Ir para Agendamentos">📅</button>
-          <button class="btn-icon" id="btn-logout-admin" title="Sair">🚪</button>
+          <button class="btn-icon" id="btn-accessibility-admin" title="Acessibilidade e Leitor de Voz (Alt+A)" aria-label="Menu de Acessibilidade e Leitor de Voz" onclick="openAccessibilityModal()">♿</button>
+          <button class="btn-icon" id="btn-admin-to-pub" title="Ir para Agendamentos" aria-label="Ir para Agendamentos">📅</button>
+          <button class="btn-icon" id="btn-logout-admin" title="Sair" aria-label="Sair da Conta">🚪</button>
         </div>
       </div>
       <!-- TABS -->
@@ -3459,6 +3564,9 @@
       t.textContent = msg;
       c.appendChild(t);
       setTimeout(() => { t.style.animation = 'slideDown .3s ease reverse'; setTimeout(() => t.remove(), 280); }, dur);
+      if (typeof speakSR === 'function') {
+        speakSR(msg, type === 'error' || type === 'danger');
+      }
     }
 
     // ============================================================
@@ -7435,9 +7543,291 @@ function renderReports() {
     }
 
     // ============================================================
+    // ACCESSIBILITY ENGINE & VOICE ASSISTANT
+    // ============================================================
+    const accPrefs = {
+      voice: false,
+      contrast: false,
+      focus: true,
+      fontScale: '100%'
+    };
+
+    function initAccessibility() {
+      const saved = localStorage.getItem('app_accessibility_prefs');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          Object.assign(accPrefs, parsed);
+        } catch (e) {}
+      }
+      applyAccPrefs();
+      setupAccGlobalKeyboard();
+      setupAccVoiceListeners();
+    }
+
+    function applyAccPrefs() {
+      const app = document.getElementById('screen-pub')?.parentElement || document.body;
+      
+      // High contrast
+      if (accPrefs.contrast) {
+        app.setAttribute('data-theme', 'high-contrast');
+        document.body.classList.add('theme-high-contrast');
+      } else {
+        document.body.classList.remove('theme-high-contrast');
+        if (app.getAttribute('data-theme') === 'high-contrast') {
+          app.removeAttribute('data-theme');
+        }
+      }
+
+      // Font scale
+      if (accPrefs.fontScale && accPrefs.fontScale !== '100%') {
+        document.documentElement.setAttribute('data-font-scale', accPrefs.fontScale);
+      } else {
+        document.documentElement.removeAttribute('data-font-scale');
+      }
+
+      // Focus
+      app.setAttribute('data-focus-high', accPrefs.focus ? 'true' : 'false');
+
+      // UI toggles inside modal if open
+      const tVoice = document.getElementById('acc-toggle-voice');
+      if (tVoice) {
+        tVoice.classList.toggle('on', accPrefs.voice);
+        tVoice.setAttribute('aria-checked', accPrefs.voice ? 'true' : 'false');
+      }
+      const tContrast = document.getElementById('acc-toggle-contrast');
+      if (tContrast) {
+        tContrast.classList.toggle('on', accPrefs.contrast);
+        tContrast.setAttribute('aria-checked', accPrefs.contrast ? 'true' : 'false');
+      }
+      const tFocus = document.getElementById('acc-toggle-focus');
+      if (tFocus) {
+        tFocus.classList.toggle('on', accPrefs.focus);
+        tFocus.setAttribute('aria-checked', accPrefs.focus ? 'true' : 'false');
+      }
+
+      document.querySelectorAll('.acc-font-btn').forEach(btn => {
+        if (btn.getAttribute('data-scale') === accPrefs.fontScale) {
+          btn.classList.add('active');
+          btn.style.background = 'var(--blue)';
+          btn.style.color = '#fff';
+        } else {
+          btn.classList.remove('active');
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      });
+
+      localStorage.setItem('app_accessibility_prefs', JSON.stringify(accPrefs));
+    }
+
+    function speakSR(text, assertive = false) {
+      if (!text) return;
+      const targetId = assertive ? 'sr-alert-announcer' : 'sr-announcer';
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.textContent = '';
+        setTimeout(() => { el.textContent = text; }, 50);
+      }
+      if (accPrefs.voice) {
+        speakVoiceText(text);
+      }
+    }
+
+    function speakVoiceText(text, cancelPrevious = true) {
+      if (!('speechSynthesis' in window)) return;
+      if (cancelPrevious) window.speechSynthesis.cancel();
+      if (!text) return;
+
+      const clean = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+      if (!clean) return;
+
+      const msg = new SpeechSynthesisUtterance(clean);
+      msg.lang = 'pt-BR';
+      msg.rate = 1.0;
+      window.speechSynthesis.speak(msg);
+    }
+
+    function toggleAccVoice() {
+      accPrefs.voice = !accPrefs.voice;
+      applyAccPrefs();
+      const msg = accPrefs.voice ? 'Leitor em voz alta ativado.' : 'Leitor em voz alta desativado.';
+      speakVoiceText(msg);
+      speakSR(msg);
+    }
+
+    function toggleAccContrast() {
+      accPrefs.contrast = !accPrefs.contrast;
+      applyAccPrefs();
+      speakSR(accPrefs.contrast ? 'Modo Alto Contraste Supremo ativado.' : 'Modo Alto Contraste desativado.');
+    }
+
+    function toggleAccFocus() {
+      accPrefs.focus = !accPrefs.focus;
+      applyAccPrefs();
+      speakSR(accPrefs.focus ? 'Indicador de Foco Brilhante ativado.' : 'Indicador de foco desativado.');
+    }
+
+    function setAccFontScale(scale) {
+      accPrefs.fontScale = scale;
+      applyAccPrefs();
+      speakSR(`Tamanho do texto alterado para ${scale}.`);
+    }
+
+    function openAccessibilityModal() {
+      let modal = document.getElementById('modal-accessibility');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-accessibility';
+        modal.className = 'modal-overlay center';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'acc-modal-title');
+        modal.innerHTML = `
+          <div class="modal-box" style="max-width:440px;width:100%;max-height:90vh;overflow-y:auto">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <h3 id="acc-modal-title" style="color:var(--navy);font-size:1.2rem">♿ Acessibilidade e Voz</h3>
+              <button onclick="closeAccessibilityModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer" aria-label="Fechar modal de acessibilidade">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <button class="btn btn-primary btn-full" style="min-height:50px;font-size:1.05rem;font-weight:700" onclick="readActiveScreen()">
+                🔊 Ouvir Resumo da Tela Atual
+              </button>
+
+              <div style="border-top:1px solid var(--gray-200);padding-top:12px">
+                <div class="config-item">
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem">🔊 Leitura em Voz Alta Integrada</div>
+                    <div style="font-size:0.8rem;color:var(--gray-500)">Narra botões, opções e avisos ao clicar</div>
+                  </div>
+                  <div class="toggle-switch ${accPrefs.voice ? 'on' : ''}" id="acc-toggle-voice" role="switch" aria-checked="${accPrefs.voice}" tabindex="0" onclick="toggleAccVoice()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccVoice()"></div>
+                </div>
+
+                <div class="config-item">
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem">👁️ Modo Alto Contraste Supremo</div>
+                    <div style="font-size:0.8rem;color:var(--gray-500)">Fundo preto, texto amarelo/branco, bordas visíveis</div>
+                  </div>
+                  <div class="toggle-switch ${accPrefs.contrast ? 'on' : ''}" id="acc-toggle-contrast" role="switch" aria-checked="${accPrefs.contrast}" tabindex="0" onclick="toggleAccContrast()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccContrast()"></div>
+                </div>
+
+                <div class="config-item">
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem">🎯 Indicador de Foco Brilhante</div>
+                    <div style="font-size:0.8rem;color:var(--gray-500)">Destaca o elemento selecionado no teclado com anel amarelo</div>
+                  </div>
+                  <div class="toggle-switch ${accPrefs.focus ? 'on' : ''}" id="acc-toggle-focus" role="switch" aria-checked="${accPrefs.focus}" tabindex="0" onclick="toggleAccFocus()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccFocus()"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-weight:700;font-size:0.95rem;margin-bottom:8px">🔍 Tamanho do Texto (Zoom)</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+                  <button class="btn btn-outline acc-font-btn ${accPrefs.fontScale === '100%' ? 'active' : ''}" data-scale="100%" onclick="setAccFontScale('100%')">100%</button>
+                  <button class="btn btn-outline acc-font-btn ${accPrefs.fontScale === '125%' ? 'active' : ''}" data-scale="125%" onclick="setAccFontScale('125%')">125%</button>
+                  <button class="btn btn-outline acc-font-btn ${accPrefs.fontScale === '150%' ? 'active' : ''}" data-scale="150%" onclick="setAccFontScale('150%')">150%</button>
+                  <button class="btn btn-outline acc-font-btn ${accPrefs.fontScale === '200%' ? 'active' : ''}" data-scale="200%" onclick="setAccFontScale('200%')">200%</button>
+                </div>
+              </div>
+
+              <div style="background:var(--gray-50);padding:12px;border-radius:var(--radius-sm);font-size:0.82rem;line-height:1.5">
+                <div style="font-weight:700;margin-bottom:6px;color:var(--navy)">⌨️ Atalhos de Teclado Rápido:</div>
+                <div><b>Alt + A</b>: Abrir / Fechar este menu</div>
+                <div><b>Alt + V</b>: Ligar / Desligar Leitor de Voz</div>
+                <div><b>Alt + C</b>: Alternar Alto Contraste</div>
+                <div><b>Alt + R</b>: Ouvir resumo da tela atual</div>
+                <div><b>Esc</b>: Fechar modais</div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn btn-secondary btn-full" onclick="closeAccessibilityModal()">Concluído</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      applyAccPrefs();
+      speakSR('Menu de Acessibilidade e Assistente de Voz aberto.');
+    }
+
+    function closeAccessibilityModal() {
+      const modal = document.getElementById('modal-accessibility');
+      if (modal) {
+        modal.style.display = 'none';
+        speakSR('Menu de acessibilidade fechado.');
+      }
+    }
+
+    function readActiveScreen() {
+      const activePub = document.getElementById('screen-pub')?.classList.contains('active');
+      const activeAdmin = document.getElementById('screen-admin')?.classList.contains('active');
+      let text = '';
+
+      if (activePub) {
+        const greeting = document.getElementById('pub-greeting')?.textContent || '';
+        const monthLabel = document.getElementById('cal-month-label')?.textContent || '';
+        text = `Agenda do Carrinho. ${greeting}. Mês exibido no calendário: ${monthLabel}. `;
+        
+        const slotItems = document.querySelectorAll('#carts-container .slot-item');
+        if (slotItems.length > 0) {
+          text += `Exibindo ${slotItems.length} turnos de serviço para esta data. `;
+        } else {
+          text += `Nenhum turno disponível para esta data. `;
+        }
+      } else if (activeAdmin) {
+        text = `Painel Administrador da Agenda do Carrinho. `;
+      } else {
+        text = `Tela de Login. Digite seu número de telefone e senha para acessar. `;
+      }
+
+      speakVoiceText(text);
+      speakSR(text);
+    }
+
+    function setupAccVoiceListeners() {
+      document.addEventListener('click', (e) => {
+        if (!accPrefs.voice) return;
+        const clickable = e.target.closest('button, a, .chip, .slot-item, .toggle-switch, .cal-day-ball, .nav-item');
+        if (clickable) {
+          let text = clickable.getAttribute('aria-label') || clickable.getAttribute('title') || clickable.innerText || clickable.textContent;
+          if (text && text.length < 150) {
+            speakVoiceText(text.trim());
+          }
+        }
+      });
+    }
+
+    function setupAccGlobalKeyboard() {
+      document.addEventListener('keydown', (e) => {
+        if (e.altKey) {
+          const k = e.key.toLowerCase();
+          if (k === 'a') {
+            e.preventDefault();
+            const modal = document.getElementById('modal-accessibility');
+            if (modal && modal.style.display === 'flex') closeAccessibilityModal();
+            else openAccessibilityModal();
+          } else if (k === 'v') {
+            e.preventDefault();
+            toggleAccVoice();
+          } else if (k === 'c') {
+            e.preventDefault();
+            toggleAccContrast();
+          } else if (k === 'r') {
+            e.preventDefault();
+            readActiveScreen();
+          }
+        } else if (e.key === 'Escape') {
+          closeAccessibilityModal();
+        }
+      });
+    }
+
+    // ============================================================
     // INIT
     // ============================================================
     async function initApp() {
+      initAccessibility();
       initPWA();
       const authenticated = await restoreAuth();
       await syncWithSupabase();
