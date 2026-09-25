@@ -2586,8 +2586,10 @@
               <h2 id="profile-name" style="color:var(--navy)">-</h2>
               <p id="profile-phone" style="color:var(--gray-500);margin-top:4px">-</p>
               <span id="profile-badge" class="badge badge-blue" style="margin-top:8px">Publicador</span>
+              <div style="margin-top:14px">
+                <button class="btn btn-ghost btn-sm" onclick="editMyProfile()">✏️ Editar Meus Dados</button>
+              </div>
             </div>
-          </div>
           <div class="card">
             <div class="card-header"><span>🔑</span>
               <h3>Alterar Senha</h3>
@@ -3130,19 +3132,37 @@
       // O cache local é apenas uma conveniência offline; nunca é uma fonte de
       // autenticação ou autorização.
       if (k === 'users') {
-        saveLocalOnly(k, (v || []).map(({ senha, senhaHash, password, ...profile }) => profile));
+        const sanitized = (v || []).map(({ senha, senhaHash, password, ...profile }) => profile);
+        saveLocalOnly(k, sanitized);
         if (!supabaseClient || !isPrivilegedUser()) return;
-        (v || []).forEach(profile => {
-          supabaseClient.from('profiles').update({
+
+        // 1. Salva na app_store (key: 'users') para garantir integridade e sobrevivência a reloads/sincronizações
+        supabaseClient.from('app_store').upsert({ key: 'users', data: sanitized }, { onConflict: 'key' })
+          .then(({ error }) => {
+            if (error) console.warn('Aviso: app_store users upsert:', error.message);
+          })
+          .catch(() => { });
+
+        // 2. Atualiza cada usuário na tabela profiles do Supabase
+        sanitized.forEach(profile => {
+          const updatePayload = {
             nome: profile.nome,
             telefone: profile.telefone,
             perfil: profile.perfil,
             status: profile.status,
             congregacao_id: profile.congregacaoId || 'boturussu',
             updated_at: new Date().toISOString()
-          }).eq('id', profile.authId || profile.id).then(({ error }) => {
-            if (error) console.error('Falha ao atualizar perfil:', error.message);
-          });
+          };
+          const targetId = profile.authId || (profile.id && String(profile.id).length > 20 ? profile.id : null);
+          if (targetId) {
+            supabaseClient.from('profiles').update(updatePayload).eq('id', targetId).then(({ error }) => {
+              if (error && profile.telefone) {
+                supabaseClient.from('profiles').update(updatePayload).eq('telefone', profile.telefone).then(() => { });
+              }
+            });
+          } else if (profile.telefone) {
+            supabaseClient.from('profiles').update(updatePayload).eq('telefone', profile.telefone).then(() => { });
+          }
         });
         return;
       }
@@ -3581,7 +3601,7 @@
       ${desc ? `<div class="modal-desc">${desc}</div>` : ''}
       ${html}
       <div class="modal-actions">${actions.map((a, i) =>
-          `<button class="btn ${a.cls || 'btn-ghost'}" id="modal-btn-${i}">${a.label}</button>`
+          `<button class="btn ${a.cls || a.class || 'btn-ghost'}" id="modal-btn-${i}">${a.label}</button>`
         ).join('')}</div>
     </div>`;
         document.getElementById('modal-container').appendChild(ov);
@@ -5379,18 +5399,20 @@ function renderCalendar() {
           || String(u.authId || '') === String(currentUser.authId || currentUser.id || '')
           || normalizePhone(u.telefone) === normalizePhone(currentUser.telefone);
         let actions = '';
+        if (isPrivilegedUser()) {
+          actions += `<button class="btn btn-primary btn-xs" onclick="editUser(${jsArg(u.id)})">✏️ Editar</button>`;
+        }
         if (!isSelfUser) {
+          if (isPrivilegedUser()) {
+            actions += `<button class="btn btn-warning btn-xs" onclick="abrirModalReset(${jsArg(u.id)})">🔑 Resetar Senha</button>`;
+          }
           // Admin pode aprovar/rejeitar pendentes
           if (u.status === 'pendente') {
             actions += `<button class="btn btn-success btn-xs" onclick="approveUser(${jsArg(u.id)})">✔ Aprovar</button>`;
             actions += `<button class="btn btn-danger btn-xs" onclick="deactivateUser(${jsArg(u.id)})">✖ Rejeitar</button>`;
           }
-          if (isPrivilegedUser()) {
-            actions += `<button class="btn btn-warning btn-xs" onclick="abrirModalReset(${jsArg(u.id)})">🔑 Resetar Senha</button>`;
-          }
           // Somente Master pode fazer o restante
           if (currentUser.perfil === 'master') {
-            actions += `<button class="btn btn-primary btn-xs" onclick="editUser(${jsArg(u.id)})">✏️ Editar</button>`;
             actions += `<button class="btn btn-danger btn-xs" onclick="deleteUser(${jsArg(u.id)})">🗑️ Excluir</button>`;
             if (u.status === 'ativo') actions += `<button class="btn btn-warning btn-xs" onclick="deactivateUser(${jsArg(u.id)})">Desativar</button>`;
             if (u.status === 'inativo') actions += `<button class="btn btn-primary btn-xs" onclick="activateUser(${jsArg(u.id)})">Ativar</button>`;
@@ -5446,52 +5468,120 @@ function renderCalendar() {
     }
 
     async function editUser(id) {
+      const isSelf = currentUser && (
+        String(currentUser.id) === String(id) ||
+        String(currentUser.authId || '') === String(id) ||
+        normalizePhone(currentUser.telefone) === normalizePhone(String(id))
+      );
+      if (!isPrivilegedUser() && !isSelf) {
+        toast('Você não tem permissão para editar outros usuários.', 'error');
+        return;
+      }
       const users = load('users') || [];
-      const idx = users.findIndex(u => String(u.id) === String(id));
-      if (idx < 0) return;
+      const idx = users.findIndex(u => String(u.id) === String(id) || normalizePhone(u.telefone) === normalizePhone(String(id)));
+      if (idx < 0) {
+        toast('Usuário não encontrado.', 'error');
+        return;
+      }
       const u = users[idx];
+      let formValues = null;
       const res = await modal({
         title: 'Editar Usuário',
         desc: 'Altere os dados do usuário abaixo:',
         html: `
       <div class="form-group">
-        <label class="form-label">Nome</label>
+        <label class="form-label">Nome Completo</label>
         <input class="form-control" id="edit-user-name" value="${escapeHtml(u.nome)}" />
       </div>
       <div class="form-group">
-        <label class="form-label">Telefone</label>
+        <label class="form-label">Telefone (com DDD)</label>
         <input class="form-control" id="edit-user-phone" type="tel" placeholder="Ex: 11999998888" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" value="${escapeHtml(u.telefone)}" />
       </div>
     `,
         actions: [
-          { label: 'Cancelar', class: 'btn-ghost', value: false },
-          { label: 'Salvar', class: 'btn-primary', value: true }
+          { label: 'Cancelar', cls: 'btn-ghost', value: false },
+          {
+            label: 'Salvar', cls: 'btn-primary', value: true,
+            action: () => {
+              const nameEl = document.getElementById('edit-user-name');
+              const phoneEl = document.getElementById('edit-user-phone');
+              formValues = {
+                name: nameEl ? nameEl.value.trim() : '',
+                phone: phoneEl ? phoneEl.value.replace(/[^0-9]/g, '').trim() : ''
+              };
+            }
+          }
         ]
       });
-      if (res) {
-        const newName = document.getElementById('edit-user-name').value.trim();
-        const rawPhone = document.getElementById('edit-user-phone').value;
-        const newPhone = rawPhone.replace(/[^0-9]/g, '').trim();
-        if (newName && newPhone) {
-          if (!/^[0-9]{10,11}$/.test(newPhone)) {
-            toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).', 'error');
-            return;
-          }
-          const existingOther = users.find(u => String(u.id) !== String(id) && (normalizePhone(u.telefone) === newPhone || u.telefone === newPhone));
-          if (existingOther) {
-            toast(`O telefone ${newPhone} já pertence a outro usuário (${existingOther.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
-            return;
-          }
-          users[idx].nome = newName;
-          users[idx].telefone = newPhone;
-          save('users', users);
-          toast('Usuário atualizado com sucesso!', 'success');
-          if (adminTab === 'users') renderAdminUsers();
-        }
+
+      if (!res) return;
+
+      const newName = formValues?.name || document.getElementById('edit-user-name')?.value?.trim();
+      const rawPhone = formValues?.phone || document.getElementById('edit-user-phone')?.value;
+      const newPhone = (rawPhone || '').replace(/[^0-9]/g, '').trim();
+
+      if (!newName) {
+        toast('O nome não pode ficar em branco.', 'error');
+        return;
       }
+      if (!newPhone || !/^[0-9]{10,11}$/.test(newPhone)) {
+        toast('Telefone inválido. Digite apenas números com DDD (10 ou 11 dígitos).', 'error');
+        return;
+      }
+
+      const existingOther = users.find(usr => String(usr.id) !== String(u.id) && (normalizePhone(usr.telefone) === newPhone || usr.telefone === newPhone));
+      if (existingOther) {
+        toast(`O telefone ${newPhone} já pertence a outro usuário (${existingOther.nome}). Não é permitido ter 02 cadastros com o mesmo número.`, 'error', 6000);
+        return;
+      }
+
+      const oldName = u.nome;
+      const oldPhone = u.telefone;
+      users[idx].nome = newName;
+      users[idx].telefone = newPhone;
+
+      // Se editou o próprio usuário logado, atualiza o currentUser
+      if (currentUser && (String(currentUser.id) === String(u.id) || normalizePhone(currentUser.telefone) === normalizePhone(oldPhone))) {
+        currentUser.nome = newName;
+        currentUser.telefone = newPhone;
+        const profNameEl = document.getElementById('profile-name');
+        const profPhoneEl = document.getElementById('profile-phone');
+        if (profNameEl) profNameEl.textContent = newName;
+        if (profPhoneEl) profPhoneEl.textContent = newPhone;
+      }
+
+      // Atualiza o nome e telefone nos agendamentos deste usuário
+      const bookings = load('bookings') || [];
+      let bookingsChanged = false;
+      bookings.forEach(b => {
+        if (String(b.usuarioId) === String(u.id) || normalizePhone(b.usuarioTelefone) === normalizePhone(oldPhone) || b.usuarioNome === oldName) {
+          b.usuarioNome = newName;
+          b.usuarioTelefone = newPhone;
+          bookingsChanged = true;
+        }
+      });
+      if (bookingsChanged) {
+        save('bookings', bookings);
+      }
+
+      save('users', users);
+      addLog(currentUser.id, currentUser.nome, 'USUARIO_EDITADO', `Dados de ${oldName} alterados para ${newName} (${newPhone})`);
+      toast('Usuário atualizado com sucesso!', 'success');
+      if (adminTab === 'users') renderAdminUsers();
+      if (typeof renderCarts === 'function') renderCarts();
     }
 
+    async function editMyProfile() {
+      if (!currentUser) return;
+      await editUser(currentUser.id);
+      if (document.getElementById('profile-name')) document.getElementById('profile-name').textContent = currentUser.nome;
+      if (document.getElementById('profile-phone')) document.getElementById('profile-phone').textContent = currentUser.telefone;
+    }
     async function deleteUser(id) {
+      if (currentUser.perfil !== 'master') {
+        toast('Apenas o Master pode excluir usuários.', 'error');
+        return;
+      }
       const users = load('users') || [];
       const u = users.find(u => String(u.id) === String(id));
       if (!u) return;
@@ -5499,13 +5589,22 @@ function renderCalendar() {
         title: 'Excluir Usuário',
         desc: `Tem certeza que deseja excluir permanentemente o cadastro de <b>${escapeHtml(u.nome)}</b>? Esta ação não pode ser desfeita.`,
         actions: [
-          { label: 'Cancelar', class: 'btn-ghost', value: false },
-          { label: 'Excluir', class: 'btn-danger', value: true }
+          { label: 'Cancelar', cls: 'btn-ghost', value: false },
+          { label: 'Excluir', cls: 'btn-danger', value: true }
         ]
       });
       if (res) {
         const newUsers = users.filter(usr => String(usr.id) !== String(id));
         save('users', newUsers);
+        if (supabaseClient) {
+          const targetId = u.authId || (u.id && String(u.id).length > 20 ? u.id : null);
+          if (targetId) {
+            supabaseClient.from('profiles').delete().eq('id', targetId).then(() => { });
+          } else if (u.telefone) {
+            supabaseClient.from('profiles').delete().eq('telefone', u.telefone).then(() => { });
+          }
+        }
+        addLog(currentUser.id, currentUser.nome, 'USUARIO_EXCLUIDO', `Cadastro de ${u.nome} (${u.telefone}) excluído.`);
         toast('Usuário excluído com sucesso.', 'info');
         if (adminTab === 'users') renderAdminUsers();
       }
@@ -5721,6 +5820,7 @@ function renderCalendar() {
       const userOpts = users.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.nome)}</option>`).join('');
       const cartOpts = carts.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nome)} — ${escapeHtml(c.local)}</option>`).join('');
       const turnoOpts = turnos.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+      let formVals = null;
       const res = await modal({
         title: 'Criar Agendamento',
         html: `
@@ -5728,13 +5828,26 @@ function renderCalendar() {
       <div class="form-group"><label class="form-label">Carrinho</label><select class="form-control" id="ab-cart">${cartOpts}</select></div>
       <div class="form-group"><label class="form-label">Data</label><input class="form-control" type="date" id="ab-date" value="${todayStr()}"/></div>
       <div class="form-group"><label class="form-label">Turno</label><select class="form-control" id="ab-turno">${turnoOpts}</select></div>`,
-        actions: [{ label: 'Criar', cls: 'btn-success', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }]
+        actions: [
+          {
+            label: 'Criar', cls: 'btn-success', value: 'ok',
+            action: () => {
+              formVals = {
+                uid: document.getElementById('ab-user')?.value,
+                cid: document.getElementById('ab-cart')?.value,
+                date: document.getElementById('ab-date')?.value,
+                turno: document.getElementById('ab-turno')?.value
+              };
+            }
+          },
+          { label: 'Cancelar', cls: 'btn-ghost', value: null }
+        ]
       });
       if (!res) return;
-      const uid = document.getElementById('ab-user')?.value;
-      const cid = document.getElementById('ab-cart')?.value;
-      const date = document.getElementById('ab-date')?.value;
-      const turno = document.getElementById('ab-turno')?.value;
+      const uid = formVals?.uid || document.getElementById('ab-user')?.value;
+      const cid = formVals?.cid || document.getElementById('ab-cart')?.value;
+      const date = formVals?.date || document.getElementById('ab-date')?.value;
+      const turno = formVals?.turno || document.getElementById('ab-turno')?.value;
       if (!uid || !cid || !date || !turno) { toast('Erro ao ler os dados do formulário.', 'error'); return; }
       const user = users.find(u => u.id === uid);
       const cart = carts.find(c => c.id === cid);
