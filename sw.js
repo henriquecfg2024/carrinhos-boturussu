@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenda-carrinho-v37-fix-booking-modal';
+const CACHE_NAME = 'agenda-carrinho-v38-fix-user-edit';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
