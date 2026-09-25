@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Agendamento • Carrinho de Publicações (Mock Demonstrativo)</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brandNavy: '#1e3a5f',
+            brandOrange: '#f59e0b',
+            brandGreen: '#22c55e',
+            brandBg: '#f5f7fb',
+            brandBorderYellow: '#fde68a',
+            brandBgYellow: '#fffbeb',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0f172a;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .tap-press:active {
+      transform: scale(0.97);
+      transition: transform 0.1s ease;
+    }
+    .animate-pulse-subtle {
+      animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseSubtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+  </style>
+</head>
+<body class="flex justify-center items-start min-h-screen py-0 sm:py-6 text-slate-800 antialiased selection:bg-amber-100 selection:text-amber-900">
+
+  <!-- Mobile Device Simulation Frame -->
+  <div class="w-full max-w-[420px] min-h-screen sm:min-h-[880px] bg-brandBg sm:rounded-[36px] shadow-2xl flex flex-col overflow-hidden relative border border-slate-800 sm:border-slate-700">
+
+    <!-- 1. HEADER ÚNICO COMPACTO (64px) -->
+    <header class="bg-brandNavy h-[64px] px-4 flex items-center justify-between text-white select-none relative z-30 shadow-md">
+      <div class="flex items-center space-x-2">
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+        <div>
+          <span class="text-[13px] font-semibold tracking-wide text-slate-100 flex items-center gap-1">
+            Olá, Henrique! <span class="text-xs">🙏</span>
+          </span>
+          <p class="text-[11px] font-normal text-slate-300 leading-tight">Carrinho de Publicações</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <!-- Ícone Coroa -->
+        <button class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors tap-press" title="Privilégios">
+          <i data-lucide="crown" class="w-4 h-4 text-amber-300"></i>
+        </button>
+        <!-- Ícone Sino com Notificação -->
+        <button class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center relative transition-colors tap-press" title="Notificações">
+          <i data-lucide="bell" class="w-4 h-4 text-white"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brandOrange rounded-full border border-brandNavy"></span>
+        </button>
+        <!-- Ícone Logout / Sair -->
+        <button class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors tap-press" title="Sair">
+          <i data-lucide="log-out" class="w-4 h-4 text-slate-200"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Main Container -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar px-3.5 pb-24 space-y-3.5 pt-3">
+
+      <!-- 2. CLIMA ULTRA COMPACTO (48px) -->
+      <div class="h-[48px] bg-white rounded-2xl shadow-sm border border-slate-100 px-3.5 flex items-center justify-between text-[11.5px] select-none">
+        <div class="flex items-center space-x-2 text-slate-700 font-medium">
+          <span class="text-base">🌧️</span>
+          <span class="font-bold text-slate-900">25°C</span>
+          <span class="text-slate-400">•</span>
+          <span class="text-slate-600 truncate max-w-[110px]">Garoa leve</span>
+        </div>
+        <div class="flex items-center space-x-2 font-medium text-slate-500 border-l border-slate-100 pl-2">
+          <span><strong class="text-slate-700">Ter</strong> 23°/15°</span>
+          <span class="text-slate-300">|</span>
+          <span><strong class="text-slate-700">Qua</strong> 19°/13°</span>
+          <span class="text-slate-300">|</span>
+          <span><strong class="text-slate-700">Qui</strong> 25°/11°</span>
+        </div>
+      </div>
+
+      <!-- 3. BANNER DE APOIO INTELIGENTE -->
+      <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-3 shadow-md shadow-amber-500/20 text-white flex items-center justify-between gap-2.5">
+        <div class="w-10 h-10 min-w-[40px] rounded-full bg-white flex items-center justify-center shadow-sm">
+          <span class="text-brandOrange font-extrabold text-lg">R</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <h4 class="text-[13.5px] font-bold text-white leading-snug">Renata precisa de apoio!</h4>
+          </div>
+          <p class="text-[11px] text-amber-100 font-medium truncate">
+            Ter 01/09 • Padaria Lucidina 08:00-10:00 • 1/3 vagas
+          </p>
+        </div>
+        <button onclick="scrollToSlot('padaria-lucidina')" class="bg-white text-brandOrange hover:bg-amber-50 font-bold text-[12.5px] px-3.5 py-2 rounded-xl shadow-sm transition tap-press flex items-center gap-1 whitespace-nowrap">
+          Apoiar <span>→</span>
+        </button>
+      </div>
+
+      <!-- 4. CALENDÁRIO MENSAL - REGRA DE OURO: DIA DENTRO DA BOLA -->
+      <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100">
+        <!-- Navegação do Mês -->
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-brandNavy"></i>
+            <span class="text-[14px] font-bold text-brandNavy">Agosto de 2026</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-600 tap-press">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <button class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-600 tap-press">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dias da Semana Header -->
+        <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400 mb-2">
+          <span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>
+        </div>
+
+        <!-- Grid de Dias (40-44px bolonas com número dentro) -->
+        <div class="grid grid-cols-7 gap-y-2 gap-x-1 justify-items-center text-center text-[14px] font-bold" id="calendarGrid">
+          <!-- Dias de Agosto com status simulado -->
+        </div>
+
+        <!-- Legenda Minimalista em Linha Única -->
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-center gap-4 text-[11px] text-slate-500 font-medium">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-brandGreen"></span>
+            <span>Vagas</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-brandOrange"></span>
+            <span>Precisa apoio</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+            <span>Lotado</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. FILTROS E SELETOR DE 3 LOCAIS -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-[14px] font-extrabold text-brandNavy" id="selectedDateText">
+            Quarta-feira, 12 de Agosto de 2026
+          </h3>
+          <span class="text-[10.5px] font-semibold px-2 py-0.5 bg-blue-50 text-brandNavy rounded-md">Hoje</span>
+        </div>
+
+        <!-- Filtros Rápidos de Status -->
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 rounded-full bg-brandNavy text-white text-[11.5px] font-semibold shadow-sm tap-press flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+            Todos os Turnos
+          </button>
+          <button class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-[11.5px] font-semibold hover:bg-slate-50 tap-press flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-brandOrange"></span>
+            Precisam de Apoio
+          </button>
+        </div>
+
+        <!-- Seletor Horizontal de Locais -->
+        <div class="flex space-x-2 overflow-x-auto custom-scrollbar py-1">
+          <!-- Todos -->
+          <button onclick="filterLocation('todos')" id="btn-loc-todos" class="location-btn px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition tap-press bg-brandNavy text-white shadow-sm flex items-center gap-1.5">
+            <span>🌐 Ver Todos / Comparar</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-white/20">5/45</span>
+          </button>
+          <!-- CAPS -->
+          <button onclick="filterLocation('caps')" id="btn-loc-caps" class="location-btn px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition tap-press bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <span>📍 CAPS</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-emerald-100 text-emerald-800">3/15 ocup.</span>
+          </button>
+          <!-- Padaria Lucidina -->
+          <button onclick="filterLocation('lucidina')" id="btn-loc-lucidina" class="location-btn px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition tap-press bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <span>📍 Padaria Lucidina</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-amber-100 text-amber-800 font-bold">1/15 apoio</span>
+          </button>
+          <!-- Padaria União -->
+          <button onclick="filterLocation('uniao')" id="btn-loc-uniao" class="location-btn px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition tap-press bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <span>📍 Padaria União</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-slate-100 text-slate-600">0/15 livre</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 6. LISTA DE HORÁRIOS ORDENADA POR URGÊNCIA -->
+      <div class="space-y-3 pt-1" id="slotsContainer">
+
+        <!-- CARD 1: QUASE COMPLETO (2/3 vagas) -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 relative overflow-hidden transition-all hover:shadow-md" data-location="caps">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i>
+                </span>
+                <div>
+                  <h4 class="text-[15px] font-extrabold text-slate-900 leading-tight">10:00 - 12:00</h4>
+                  <p class="text-[11.5px] font-medium text-slate-500">2/3 vagas • CAPS • Ponto de Ônibus</p>
+                </div>
+              </div>
+            </div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white shadow-sm animate-pulse-subtle">
+              🔥 Quase completo
+            </span>
+          </div>
+
+          <!-- Bolonas de Participantes -->
+          <div class="flex items-center gap-2 mb-3">
+            <div class="flex -space-x-1.5 overflow-hidden items-center">
+              <div class="w-8 h-8 rounded-full bg-brandGreen text-white font-bold text-[11px] flex items-center justify-center border-2 border-white shadow-sm" title="Ana Lucia">
+                AL
+              </div>
+              <div class="w-8 h-8 rounded-full bg-brandGreen text-white font-bold text-[11px] flex items-center justify-center border-2 border-white shadow-sm" title="Neuza">
+                NA
+              </div>
+            </div>
+            <span class="text-[12px] font-semibold text-slate-700">Ana Lucia, Neuza</span>
+          </div>
+
+          <!-- Ação -->
+          <button onclick="openModal('10:00 - 12:00', 'CAPS', 2)" class="w-full py-2.5 bg-brandNavy hover:bg-slate-800 text-white font-bold text-[13px] rounded-xl shadow-md transition tap-press flex items-center justify-center gap-2">
+            <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+            Entrar nesse horário
+          </button>
+        </div>
+
+        <!-- CARD 2: COM O USUÁRIO ESCALADO (Check-in Ativo) -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-amber-200 relative overflow-hidden" data-location="caps">
+          <div class="flex items-start justify-between mb-2.5">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+                  <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
+                </span>
+                <div>
+                  <h4 class="text-[15px] font-extrabold text-slate-900 leading-tight">08:00 - 10:00</h4>
+                  <p class="text-[11.5px] font-medium text-slate-500">1/3 vagas • CAPS • Ponto de Ônibus</p>
+                </div>
+              </div>
+            </div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              Você aqui
+            </span>
+          </div>
+
+          <!-- Bolonas de Participantes -->
+          <div class="flex items-center gap-2 mb-2.5">
+            <div class="w-8 h-8 rounded-full bg-brandNavy text-white font-bold text-[11px] flex items-center justify-center border-2 border-white shadow-sm" title="Henrique Cesar">
+              HC
+            </div>
+            <span class="text-[12px] font-bold text-brandNavy">Henrique Cesar</span>
+          </div>
+
+          <!-- Alerta de Confirmação Pendente -->
+          <div class="bg-amber-50 rounded-xl p-2.5 border border-amber-200 flex items-start gap-2 mb-3 text-[11.5px] text-amber-900">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+            <span><strong>Só confirma com +1 irmão.</strong> Te avisamos quando alguém entrar.</span>
+          </div>
+
+          <!-- Botão Preservado de Check-in -->
+          <button onclick="handleCheckInDemo()" id="btnCheckIn" class="w-full py-2.5 bg-brandNavy hover:bg-slate-800 text-white font-bold text-[13px] rounded-xl shadow-md transition tap-press flex items-center justify-center gap-2">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+            Fazer check-in agora
+          </button>
+        </div>
+
+        <!-- 7. CORREÇÃO CRÍTICA: CARD SÓLIDO DE HORÁRIOS LIVRES (ALTO CONTRASTE) -->
+        <div class="bg-brandBgYellow border-2 border-brandBorderYellow rounded-2xl p-3.5 shadow-sm select-none transition-all">
+          <div class="flex items-center justify-between gap-3">
+            <!-- Bolona Laranja com Número de Vagas -->
+            <div class="w-10 h-10 min-w-[40px] rounded-full bg-brandOrange text-white font-extrabold text-[16px] flex items-center justify-center shadow-md shadow-amber-500/30">
+              4
+            </div>
+            <!-- Textos Positivos -->
+            <div class="flex-1 min-w-0">
+              <h4 class="text-[14px] font-extrabold text-brandNavy leading-tight">4 horários livres ainda!</h4>
+              <p class="text-[11.5px] font-medium text-slate-600">Toque para ver e agendar</p>
+            </div>
+            <!-- CTA Sólido Azul -->
+            <button onclick="toggleEmptySlots()" id="btnToggleEmpty" class="bg-brandNavy text-white hover:bg-slate-800 font-bold text-[12.5px] px-4 py-2.5 rounded-full shadow-md transition tap-press flex items-center gap-1.5 whitespace-nowrap">
+              <span id="txtToggleEmpty">Ver horários</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Container Expansível de Horários Vazios -->
+          <div id="emptySlotsContainer" class="hidden mt-3.5 pt-3 border-t border-amber-200/70 space-y-2.5">
+            <p class="text-[11.5px] text-amber-900 bg-amber-100/60 p-2.5 rounded-xl flex items-center gap-2">
+              <span>💡</span> <strong>Esses horários ficam vazios!</strong> Que tal convidar alguém para servir com você?
+            </p>
+
+            <!-- Card Vazio 1 -->
+            <div class="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between">
+              <div>
+                <span class="text-[13px] font-bold text-slate-800">14:00 - 16:00</span>
+                <p class="text-[11px] text-slate-500">Padaria Lucidina • 0/3 vagas</p>
+                <div class="flex gap-1.5 mt-1.5">
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                </div>
+              </div>
+              <button onclick="openModal('14:00 - 16:00', 'Padaria Lucidina', 0)" class="px-3.5 py-2 bg-brandNavy text-white rounded-lg text-xs font-bold tap-press shadow-sm">
+                + Agendar
+              </button>
+            </div>
+
+            <!-- Card Vazio 2 -->
+            <div class="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between">
+              <div>
+                <span class="text-[13px] font-bold text-slate-800">16:00 - 18:00</span>
+                <p class="text-[11px] text-slate-500">Padaria União • 0/3 vagas</p>
+                <div class="flex gap-1.5 mt-1.5">
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                  <span class="w-6 h-6 rounded-full border border-dashed border-slate-300 text-slate-400 text-xs flex items-center justify-center">+</span>
+                </div>
+              </div>
+              <button onclick="openModal('16:00 - 18:00', 'Padaria União', 0)" class="px-3.5 py-2 bg-brandNavy text-white rounded-lg text-xs font-bold tap-press shadow-sm">
+                + Agendar
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- 8. MODAL DE AGENDAMENTO CONDICIONAL (BOTTOM SHEET) -->
+    <div id="scheduleModal" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center hidden opacity-0 transition-opacity duration-200">
+      <div class="bg-white w-full max-w-[420px] rounded-t-3xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 ease-out" id="modalCard">
+        <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4"></div>
+
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-[16px] font-extrabold text-slate-900" id="modalTitle">Agendar Horário</h3>
+        </div>
+
+        <div id="modalConditionalContent" class="space-y-3.5 my-3">
+          <!-- Conteúdo Condicional injetado via JS -->
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-2">
+          <button onclick="closeModal()" class="py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 tap-press">
+            Cancelar
+          </button>
+          <button onclick="confirmSchedule()" class="py-2.5 px-4 rounded-xl bg-brandNavy text-white font-bold text-xs shadow-md hover:bg-slate-800 tap-press">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast de Notificação -->
+    <div id="toastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-2.5 rounded-full text-xs font-semibold shadow-xl z-50 flex items-center gap-2 hidden transition-all">
+      <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toastMessage">Operação realizada com sucesso!</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Inicia ícones do Lucide
+    lucide.createIcons();
+
+    // 4. Renderização do Calendário com número DENTRO da bolona
+    const augustDaysStatus = {
+      3: 'orange', 4: 'orange', 5: 'orange', 7: 'orange', 8: 'orange',
+      10: 'orange', 11: 'orange', 12: 'orange', 15: 'orange', 17: 'orange',
+      18: 'orange', 19: 'orange', 21: 'orange', 22: 'orange', 25: 'orange',
+      28: 'orange', 29: 'orange', 30: 'orange',
+      13: 'green', 14: 'green', 24: 'green', 26: 'green',
+      6: 'gray', 20: 'gray', 27: 'gray'
+    };
+
+    let selectedDay = 12;
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      // Offset para começar no sábado (Agosto 2026 começa no sábado = 6 dias vazios)
+      for (let i = 0; i < 6; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'w-10 h-10';
+        grid.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= 31; day++) {
+        const btn = document.createElement('button');
+        btn.onclick = () => selectDay(day);
+        
+        let status = augustDaysStatus[day] || 'white';
+        let isSelected = (day === selectedDay);
+
+        let bgClass = '';
+        let textClass = 'text-white';
+        let borderClass = '';
+
+        if (status === 'green') {
+          bgClass = 'bg-brandGreen';
+        } else if (status === 'orange') {
+          bgClass = 'bg-brandOrange';
+        } else if (status === 'gray') {
+          bgClass = 'bg-slate-400';
+        } else {
+          bgClass = 'bg-white';
+          textClass = 'text-brandNavy';
+          borderClass = 'border border-slate-200';
+        }
+
+        let selectedRing = isSelected ? 'ring-4 ring-brandNavy/30 border-2 border-brandNavy scale-105 z-10 shadow-md' : '';
+
+        btn.className = `w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13.5px] transition-all tap-press ${bgClass} ${textClass} ${borderClass} ${selectedRing}`;
+        btn.innerHTML = day;
+        grid.appendChild(btn);
+      }
+    }
+
+    function selectDay(day) {
+      selectedDay = day;
+      renderCalendar();
+      document.getElementById('selectedDateText').innerText = `${day === 12 ? 'Quarta-feira, 12 de Agosto de 2026' : `Dia ${day} de Agosto de 2026`}`;
+      showToast(`Dia ${day} de Agosto selecionado`);
+    }
+
+    // 5. Filtro de Locais
+    function filterLocation(loc) {
+      const buttons = document.querySelectorAll('.location-btn');
+      buttons.forEach(b => {
+        b.classList.remove('bg-brandNavy', 'text-white');
+        b.classList.add('bg-white', 'text-slate-700');
+      });
+
+      const activeBtn = document.getElementById(`btn-loc-${loc}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brandNavy', 'text-white');
+        activeBtn.classList.remove('bg-white', 'text-slate-700');
+      }
+
+      showToast(`Filtrando por: ${loc.toUpperCase()}`);
+    }
+
+    // 7. Toggle Horários Livres (Visibilidade Positiva)
+    let emptyVisible = false;
+    function toggleEmptySlots() {
+      emptyVisible = !emptyVisible;
+      const container = document.getElementById('emptySlotsContainer');
+      const btnText = document.getElementById('txtToggleEmpty');
+      
+      if (emptyVisible) {
+        container.classList.remove('hidden');
+        btnText.innerText = 'Ocultar';
+      } else {
+        container.classList.add('hidden');
+        btnText.innerText = 'Ver horários';
+      }
+    }
+
+    // 8. Modal de Agendamento Inteligente
+    let currentSlotTarget = null;
+    function openModal(time, location, currentOccupants) {
+      currentSlotTarget = { time, location, currentOccupants };
+      const modal = document.getElementById('scheduleModal');
+      const card = document.getElementById('modalCard');
+      const content = document.getElementById('modalConditionalContent');
+      const title = document.getElementById('modalTitle');
+
+      title.innerText = `Agendar: ${time}`;
+
+      if (currentOccupants === 0) {
+        content.innerHTML = `
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-900 leading-relaxed">
+            ⚠️ <strong>Horário precisa de +1 irmão:</strong> Agendamentos 0/3 só são confirmados quando outra pessoa também participa.
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-[12px] text-brandNavy flex items-center justify-between">
+            <div>
+              <span class="font-bold">✨ Sugestão Inteligente:</span>
+              <p class="text-[11px] text-slate-600">10:00-12:00 (CAPS) já tem 2 pessoas e confirmação imediata.</p>
+            </div>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[12px] text-emerald-900">
+            ✅ <strong>Confirmação imediata!</strong> Esse horário já possui voluntários confirmados.
+          </div>
+        `;
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        card.classList.remove('translate-y-full');
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('scheduleModal');
+      const card = document.getElementById('modalCard');
+      card.classList.add('translate-y-full');
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    function confirmSchedule() {
+      closeModal();
+      showToast('Agendamento confirmado com sucesso!');
+    }
+
+    // 9. Preservação de Check-in de Produção (Demo)
+    function handleCheckInDemo() {
+      const btn = document.getElementById('btnCheckIn');
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Validando Localização...';
+      lucide.createIcons();
+
+      setTimeout(() => {
+        btn.className = 'w-full py-2.5 bg-emerald-600 text-white font-bold text-[13px] rounded-xl shadow-md transition flex items-center justify-center gap-2';
+        btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Check-in Ativo (01:59:40)';
+        lucide.createIcons();
+        showToast('Check-in realizado com sucesso!');
+      }, 900);
+    }
+
+    function scrollToSlot(id) {
+      showToast('Navegando para o horário de Renata...');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMessage');
+      text.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2500);
+    }
+
+    // Inicialização
+    renderCalendar();
+  </script>
+</body>
+</html>

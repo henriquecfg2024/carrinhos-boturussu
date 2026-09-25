@@ -4639,14 +4639,13 @@ function renderCalendar() {
         return;
       }
       const suggestionsHtml = otherSlots.map(s => `<button class="btn btn-outline btn-full" style="margin-bottom:8px;min-height:46px;font-size:0.95rem" onclick="const ov = document.querySelector('.modal-overlay'); if (ov) ov.remove(); createBooking('${cartId}','${date}','${s.turno}')">🕐 ${s.turno} — com ${escHtml(s.names)} (${s.count}/${capMax})</button>`).join('');
+      const confirmBtnHtml = `<button class="btn btn-ghost" style="flex:1" onclick="const ov = document.querySelector('.modal-overlay'); if (ov) ov.remove(); createBooking('${cartId}','${date}','${turno}')">Agendar ${turno} mesmo assim</button>`;
+      const cancelBtnHtml = `<button class="btn btn-ghost" style="flex:1" onclick="const ov = document.querySelector('.modal-overlay'); if (ov) ov.remove();">Cancelar</button>`;
       modal({
         title: '💡 Dica de Serviço',
         desc: `O horário <b>${turno}</b> ainda não tem ninguém agendado. Que tal um horário que já tem irmãos confirmados?`,
-        html: `<div style="margin:12px 0">${suggestionsHtml}</div><div style="text-align:center;margin-top:8px;font-size:0.85rem;color:var(--gray-500)">Ou continue com o horário escolhido:</div>`,
-        actions: [
-          { label: `Agendar ${turno} mesmo assim`, cls: 'btn-ghost', action: () => createBooking(cartId, date, turno) },
-          { label: 'Cancelar', cls: 'btn-ghost' }
-        ],
+        html: `<div style="margin:12px 0">${suggestionsHtml}</div><div style="text-align:center;margin-top:8px;font-size:0.85rem;color:var(--gray-500)">Ou continue com o horário escolhido:</div><div class="modal-actions" style="margin-top:12px">${confirmBtnHtml}${cancelBtnHtml}</div>`,
+        actions: [],
         center: true
       });
     }
@@ -4661,6 +4660,7 @@ function renderCalendar() {
     // --- BOOKING ACTIONS ---
     async function createBooking(cartId, date, turno) {
       const cart = (load('carts') || []).find(c => c.id === cartId);
+      if (!cart) { toast('Carrinho não encontrado.', 'error'); return; }
       const [y, m, d] = date.split('-');
       const res = await modal({
         title: 'Confirmar Agendamento',
