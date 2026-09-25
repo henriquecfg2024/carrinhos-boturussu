@@ -3588,12 +3588,12 @@
         ov.addEventListener('click', e => { if (e.target === ov) { cleanup(); resolve(null); } });
         actions.forEach((a, i) => {
           ov.querySelector(`#modal-btn-${i}`).onclick = (e) => {
-            cleanup();
             if (typeof a.action === 'function') {
               try { a.action(e); } catch (err) { console.error('Erro na ação do modal:', err); }
             }
             const val = a.value !== undefined ? a.value : (a.action ? true : null);
             resolve(val);
+            setTimeout(() => cleanup(), 0);
           };
         });
         function cleanup() { if (ov.parentNode) ov.remove(); }
@@ -5731,12 +5731,15 @@ function renderCalendar() {
         actions: [{ label: 'Criar', cls: 'btn-success', value: 'ok' }, { label: 'Cancelar', cls: 'btn-ghost', value: null }]
       });
       if (!res) return;
-      const uid = document.getElementById('ab-user').value;
-      const cid = document.getElementById('ab-cart').value;
-      const date = document.getElementById('ab-date').value;
-      const turno = document.getElementById('ab-turno').value;
+      const uid = document.getElementById('ab-user')?.value;
+      const cid = document.getElementById('ab-cart')?.value;
+      const date = document.getElementById('ab-date')?.value;
+      const turno = document.getElementById('ab-turno')?.value;
+      if (!uid || !cid || !date || !turno) { toast('Erro ao ler os dados do formulário.', 'error'); return; }
       const user = users.find(u => u.id === uid);
       const cart = carts.find(c => c.id === cid);
+      if (!user) { toast('Publicador não encontrado.', 'error'); return; }
+      if (!cart) { toast('Carrinho não encontrado.', 'error'); return; }
       const bookings = load('bookings') || [];
       const slot = bookings.filter(b => b.carrinhoId === cid && b.data === date && b.turno === turno && b.status !== 'cancelado');
       if (slot.length >= cart.capMax) { toast('Turno lotado.', 'error'); return; }
